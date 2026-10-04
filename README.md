@@ -55,3 +55,4 @@ Data stays in the current browser profile and is not synchronized or encrypted. 
 - `index.html` — application markup, styles, and client-side behavior.
 - `manifest.json` and `icon.svg` — installable app metadata and icon.
 - `sw.js` — versioned, same-origin app-shell cache for offline loading.
+- `.github/skills/streak-habit-development/SKILL.md` — reusable implementation and quality workflow for habit-tracker changes.

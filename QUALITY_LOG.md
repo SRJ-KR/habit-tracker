@@ -54,3 +54,10 @@ Record each implementation change and its verification here **before committing*
 - **Checks run:** `npm run gate`; `git diff --check`; editor diagnostics; browser checks for cue create/edit round-trip, rendered cue on Today and habits list, injected markup remaining text, missing-anchor reminder, and 360px dialog/layout fit.
 - **Results:** **PASS** — project checks passed, 10 tests passed, 0 failed; `git diff --check` passed; editor diagnostics reported no errors. Browser checks confirmed cue fields save and repopulate on edit, render on Today and the habits list, and treat `<img onerror>` input as text (zero image nodes). Saving without an anchor displayed the required reminder and retained the cue. At 360px, all cue fields remained visible, the dialog fit within the viewport, and no horizontal overflow occurred. Updated and verified service-worker cache `daymark-shell-v14`.
 - **Commit:** Pending.
+
+### 2026-10-04 — Document the habit-development skill
+
+- **Change summary:** Add a reusable repository skill covering architecture, UX, data/migration safety, and the stepwise quality-gate workflow; link it from the README.
+- **Checks run:** `npm run gate`; `git diff --check`.
+- **Results:** **PASS** — project checks passed, 10 tests passed, 0 failed; `git diff --check` passed.
+- **Commit:** Pending.

@@ -46,7 +46,7 @@ The GitHub Actions workflow runs `npm run gate` for pushes and pull requests. Re
 
 ## Data and schema
 
-The browser stores one JSON document in `localStorage` under `daymark.data`. Its `schemaVersion` is `1.0.0`; separate collections hold habits, habit entries, focus sessions, energy check-ins, and learning logs. UI code works with this document through a small load/save boundary, so persistence can later be moved behind an API without changing the page structure.
+The browser stores one JSON document in `localStorage` under `daymark.data`. Its current `schemaVersion` is `2`; separate collections hold habits, habit entries, focus sessions, energy check-ins, learning logs, weekly reviews, and habit exceptions. Version 1 data migrates forward in the browser without removing existing records. JSON backups use the `{app, schemaVersion, exportedAt, data}` envelope; version 1 backups are migrated during import, while unsupported newer versions are rejected. UI code works with this document through a small load/save boundary, so persistence can later be moved behind an API without changing the page structure.
 
 Data stays in the current browser profile and is not synchronized or encrypted. Clearing browser storage removes it. Use **Data settings → Export JSON backup** regularly; exported files contain your notes in plain text. Import validates the schema and replaces the current local data.
 

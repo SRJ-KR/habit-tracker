@@ -9,13 +9,28 @@ const html = await readFile(path.join(root, "index.html"), "utf8");
 const manifest = JSON.parse(await readFile(path.join(root, "manifest.json"), "utf8"));
 const serviceWorker = await readFile(path.join(root, "sw.js"), "utf8");
 
-test("the app declares all five independent data collections and a schema version", () => {
-  for (const field of ["habits", "habitEntries", "focusSessions", "checkins", "learningLogs"]) {
+test("the app declares its data collections, settings defaults, and schema version", () => {
+  for (const field of ["habits", "habitEntries", "focusSessions", "checkins", "learningLogs", "reviews", "exceptions"]) {
     assert.match(html, new RegExp(`\\b${field}:\\s*\\[\\]`), `${field} collection is missing`);
   }
-  assert.match(html, /SCHEMA_VERSION\s*=\s*"1\.0\.0"/);
+  assert.match(html, /SCHEMA_VERSION\s*=\s*"2"/);
+  assert.match(html, /const SETTINGS_DEFAULT = \{ minCountsAsDone: true, graceDaysPerMonth: 2, lastReviewWeek: "" \}/);
   assert.match(html, /localStorage\.setItem\(STORAGE_KEY/);
   assert.match(html, /localStorage\.getItem\(STORAGE_KEY/);
+});
+
+test("schema v2 migrates v1 data without dropping existing fields and documents the new entities", () => {
+  assert.match(html, /const MIGRATIONS = \{\s*2:\s*value =>/);
+  assert.match(html, /\.\.\.value,\s*schemaVersion: SCHEMA_VERSION/);
+  assert.match(html, /cue: \{ anchor: "", place: "", time: "" \}/);
+  assert.match(html, /target: \{ type: "check", min: 1, value: 1 \}/);
+  assert.match(html, /reviews:\s*\{\s*required: \["weekStart"\]/);
+  assert.match(html, /exceptions:\s*\{\s*required: \["habitId", "date", "kind"\]/);
+  assert.match(html, /for \(let next = major \+ 1; next <= currentMajor; next \+= 1\)/);
+  assert.match(html, /app: "streak", schemaVersion: SCHEMA_VERSION, exportedAt:/);
+  assert.match(html, /id="schema-docs-table"/);
+  assert.match(html, /Object\.entries\(COLS\)/);
+  assert.match(html, /Schema version v\$\{SCHEMA_VERSION\}/);
 });
 
 test("every MVP module has a reachable navigation entry and rendered section", () => {

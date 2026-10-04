@@ -212,6 +212,14 @@
     .close-button { background: none; border: 0; color: var(--muted); font-size: 20px; line-height: 1; padding: 2px 5px; }
     .settings-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 19px; }
     .storage-note { background: #f6f7f2; border-radius: 8px; color: #72796f; font-size: 10px; line-height: 1.6; margin-top: 15px; padding: 11px 12px; }
+    .schema-docs { margin-top: 17px; }
+    .schema-docs h3 { font-size: 12px; margin: 0 0 8px; }
+    .schema-table-wrap { border: 1px solid var(--line); border-radius: 8px; max-width: 100%; overflow-x: auto; }
+    .schema-table { border-collapse: collapse; font-size: 10px; min-width: 470px; text-align: left; width: 100%; }
+    .schema-table th, .schema-table td { border-bottom: 1px solid var(--line); padding: 8px; vertical-align: top; }
+    .schema-table th { background: #f6f7f2; color: var(--muted); font-weight: 700; }
+    .schema-table tr:last-child td { border-bottom: 0; }
+    .schema-fields { color: var(--muted); overflow-wrap: anywhere; }
     .mobile-brand { display: none; }
     @media (max-width: 1050px) {
       .main { padding: 0 30px 50px; }
@@ -444,13 +452,13 @@
   </dialog>
   <dialog id="settings-dialog">
     <div class="dialog-head"><h2>Your data</h2><button class="close-button" data-close="settings-dialog" aria-label="Close">×</button></div>
-    <div class="dialog-body"><p class="subtitle" style="margin-top:0">Daymark stores your information only in this browser. Export a backup whenever you like.</p><div class="settings-actions"><button class="button" id="export-data">↓ Export JSON backup</button><button class="button secondary" id="import-data">↑ Import backup</button><input id="import-file" type="file" accept="application/json,.json" hidden></div><div class="storage-note">Schema version 1.0.0 · Data stays on this device · Import replaces the current data. Keep your exported backup somewhere safe.</div></div>
+    <div class="dialog-body"><p class="subtitle" style="margin-top:0">Daymark stores your information only in this browser. Export a backup whenever you like.</p><div class="settings-actions"><button class="button" id="export-data">↓ Export JSON backup</button><button class="button secondary" id="import-data">↑ Import backup</button><input id="import-file" type="file" accept="application/json,.json" hidden></div><div class="storage-note" id="schema-version-note"></div><div class="schema-docs"><h3>Data schema</h3><div class="schema-table-wrap"><table class="schema-table" id="schema-docs-table" aria-label="Data schema collections"></table></div></div></div>
   </dialog>
   <script>
     (() => {
       "use strict";
       const STORAGE_KEY = "daymark.data";
-      const SCHEMA_VERSION = "1.0.0";
+      const SCHEMA_VERSION = "2";
       const MINUTE = 60 * 1000;
       const DAY = 24 * 60 * MINUTE;
       const $ = (selector, root = document) => root.querySelector(selector);
@@ -458,7 +466,100 @@
       const today = () => dateKey(new Date());
       const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-      const freshData = () => ({ schemaVersion: SCHEMA_VERSION, habits: [], habitEntries: [], focusSessions: [], checkins: [], learningLogs: [] });
+      const SETTINGS_DEFAULT = { minCountsAsDone: true, graceDaysPerMonth: 2, lastReviewWeek: "" };
+      const DATA_COLLECTIONS = ["habits", "habitEntries", "focusSessions", "checkins", "learningLogs", "reviews", "exceptions"];
+      const COLS = {
+        settings: {
+          required: [],
+          doc: "App-wide preferences and review state.",
+          fields: ["minCountsAsDone", "graceDaysPerMonth", "lastReviewWeek"],
+          defaults: () => ({ ...SETTINGS_DEFAULT })
+        },
+        habits: {
+          required: ["name"],
+          doc: "Recurring routines and their behavior-design details.",
+          fields: ["id", "name", "frequency", "active", "createdAt", "cue", "identity", "reward", "pledge", "witness", "target"],
+          defaults: () => ({ cue: { anchor: "", place: "", time: "" }, identity: "", reward: "", pledge: "", witness: "", target: { type: "check", min: 1, value: 1 } })
+        },
+        habitEntries: {
+          required: ["habitId", "date", "completed"],
+          doc: "Completed habit check-ins by local calendar date.",
+          fields: ["id", "habitId", "date", "completed"],
+          defaults: () => ({ completed: true })
+        },
+        focusSessions: {
+          required: ["title", "steps", "date", "durationSeconds"],
+          doc: "Five-minute focus sessions and their small action steps.",
+          fields: ["id", "title", "steps", "date", "durationSeconds"],
+          defaults: () => ({ steps: [], durationSeconds: 0 })
+        },
+        checkins: {
+          required: ["date", "period", "energy", "mood", "note"],
+          doc: "Energy and mood observations.",
+          fields: ["id", "date", "period", "checkedAt", "energy", "mood", "note"],
+          defaults: () => ({ note: "" })
+        },
+        learningLogs: {
+          required: ["technology", "topic", "notes", "date", "minutes"],
+          doc: "Technology learning sessions and notes.",
+          fields: ["id", "technology", "topic", "notes", "date", "minutes"],
+          defaults: () => ({ notes: "" })
+        },
+        reviews: {
+          required: ["weekStart"],
+          doc: "A weekly reflection, keyed to its Monday start date.",
+          fields: ["id", "weekStart", "worked", "blocked", "change", "createdAt", "meta"],
+          defaults: () => ({ id: uid(), weekStart: "", worked: "", blocked: "", change: "", createdAt: new Date().toISOString(), meta: {} })
+        },
+        exceptions: {
+          required: ["habitId", "date", "kind"],
+          doc: "A recorded grace day or skip for a habit and local date.",
+          fields: ["id", "habitId", "date", "kind", "note", "createdAt", "meta"],
+          defaults: () => ({ id: uid(), habitId: "", date: "", kind: "skip", note: "", createdAt: new Date().toISOString(), meta: {} })
+        }
+      };
+      const MIGRATIONS = {
+        2: value => {
+          if (Number(String(value.schemaVersion).split(".")[0]) >= 2) return value;
+          const settings = value.settings === undefined
+            ? { ...SETTINGS_DEFAULT }
+            : value.settings && typeof value.settings === "object" && !Array.isArray(value.settings)
+              ? { ...SETTINGS_DEFAULT, ...value.settings }
+              : value.settings;
+          return {
+            ...value,
+            schemaVersion: SCHEMA_VERSION,
+            settings,
+            habits: Array.isArray(value.habits) ? value.habits.map(habit => {
+              const defaults = COLS.habits.defaults();
+              const cue = habit.cue === undefined
+                ? defaults.cue
+                : habit.cue && typeof habit.cue === "object" && !Array.isArray(habit.cue)
+                  ? { ...defaults.cue, ...habit.cue }
+                  : habit.cue;
+              const target = habit.target === undefined
+                ? defaults.target
+                : habit.target && typeof habit.target === "object" && !Array.isArray(habit.target)
+                  ? { ...defaults.target, ...habit.target, min: habit.target.min ?? defaults.target.min }
+                  : habit.target;
+              return { ...defaults, ...habit, cue, target };
+            }) : value.habits,
+            reviews: value.reviews === undefined ? [] : value.reviews,
+            exceptions: value.exceptions === undefined ? [] : value.exceptions
+          };
+        }
+      };
+      const freshData = () => ({
+        schemaVersion: SCHEMA_VERSION,
+        settings: { ...SETTINGS_DEFAULT },
+        habits: [],
+        habitEntries: [],
+        focusSessions: [],
+        checkins: [],
+        learningLogs: [],
+        reviews: [],
+        exceptions: []
+      });
       let data;
       let selectedEnergy = 3;
       let selectedMood = "Steady";
@@ -478,17 +579,50 @@
         noticeTimeout = setTimeout(() => { notice.className = "notice"; }, 4500);
       }
 
-      function validateData(value) {
-        const arrayFields = ["habits", "habitEntries", "focusSessions", "checkins", "learningLogs"];
+      function upgradeData(value) {
         if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("The backup must contain a JSON object.");
-        if (value.schemaVersion !== SCHEMA_VERSION) throw new Error(`Unsupported schema version. Expected ${SCHEMA_VERSION}.`);
-        for (const field of arrayFields) if (!Array.isArray(value[field])) throw new Error(`The backup is missing a valid "${field}" collection.`);
+        let version = value.schemaVersion;
+        let payload = value;
+        if (Object.prototype.hasOwnProperty.call(value, "app")) {
+          if (value.app !== "streak") throw new Error('The backup app must be "streak".');
+          if (!value.data || typeof value.data !== "object" || Array.isArray(value.data)) throw new Error("The backup must contain a valid data object.");
+          payload = value.data;
+          if (payload.schemaVersion !== undefined && payload.schemaVersion !== value.schemaVersion) throw new Error("The backup schema versions do not match.");
+        }
+        const versionMatch = typeof version === "string" && /^(\d+)(?:\.\d+\.\d+)?$/.exec(version);
+        if (!versionMatch) throw new Error("The backup is missing a supported schema version.");
+        const major = Number(versionMatch[1]);
+        const currentMajor = Number(SCHEMA_VERSION);
+        if (major > currentMajor) throw new Error(`Unsupported newer schema version ${version}. This app supports ${SCHEMA_VERSION}.`);
+        if (major < 1) throw new Error(`Unsupported schema version ${version}.`);
+        let upgraded = { ...payload, schemaVersion: version };
+        for (let next = major + 1; next <= currentMajor; next += 1) {
+          const migration = MIGRATIONS[next];
+          if (!migration) throw new Error(`No migration is available for schema version ${next}.`);
+          upgraded = migration(upgraded);
+        }
+        return upgraded;
+      }
+
+      function validateData(value) {
+        const upgraded = upgradeData(value);
+        if (upgraded.schemaVersion !== SCHEMA_VERSION) throw new Error(`Unsupported schema version. Expected ${SCHEMA_VERSION}.`);
+        for (const field of DATA_COLLECTIONS) if (!Array.isArray(upgraded[field])) throw new Error(`The backup is missing a valid "${field}" collection.`);
+        const settings = upgraded.settings;
+        if (!settings || typeof settings !== "object" || Array.isArray(settings)) throw new Error("The backup contains invalid settings.");
         const isText = (v, max) => typeof v === "string" && v.length <= max;
         const isDate = v => {
           if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
           const [year, month, day] = v.split("-").map(Number);
           return dateKey(new Date(year, month - 1, day)) === v;
         };
+        const isMonday = v => {
+          if (!isDate(v)) return false;
+          const [year, month, day] = v.split("-").map(Number);
+          return new Date(year, month - 1, day).getDay() === 1;
+        };
+        const isRecord = v => !!v && typeof v === "object" && !Array.isArray(v);
+        if (typeof settings.minCountsAsDone !== "boolean" || !Number.isInteger(settings.graceDaysPerMonth) || settings.graceDaysPerMonth < 0 || settings.graceDaysPerMonth > 31 || !isText(settings.lastReviewWeek, 10) || (settings.lastReviewWeek !== "" && !isDate(settings.lastReviewWeek))) throw new Error("The backup contains invalid settings.");
         const ids = new Set();
         const checkIds = (items, name) => {
           for (const item of items) {
@@ -496,31 +630,44 @@
             ids.add(`${name}:${item.id}`);
           }
         };
-        checkIds(value.habits, "habit");
-        checkIds(value.habitEntries, "habit entry");
-        checkIds(value.focusSessions, "focus session");
-        checkIds(value.checkins, "check-in");
-        checkIds(value.learningLogs, "learning session");
-        for (const habit of value.habits) if (!isText(habit.name, 80) || !["daily", "weekdays"].includes(habit.frequency) || typeof habit.active !== "boolean") throw new Error("The backup contains an invalid habit.");
-        const habitIds = new Set(value.habits.map(habit => habit.id));
+        checkIds(upgraded.habits, "habit");
+        checkIds(upgraded.habitEntries, "habit entry");
+        checkIds(upgraded.focusSessions, "focus session");
+        checkIds(upgraded.checkins, "check-in");
+        checkIds(upgraded.learningLogs, "learning session");
+        checkIds(upgraded.reviews, "review");
+        checkIds(upgraded.exceptions, "exception");
+        for (const habit of upgraded.habits) {
+          const defaults = COLS.habits.defaults();
+          if (!isText(habit.name, 80) || !["daily", "weekdays"].includes(habit.frequency) || typeof habit.active !== "boolean" || !isText(habit.identity, 160) || !isText(habit.reward, 240) || !isText(habit.pledge, 500) || !isText(habit.witness, 100) || !isRecord(habit.cue) || !isText(habit.cue.anchor, 160) || !isText(habit.cue.place, 120) || !isText(habit.cue.time, 80) || !isRecord(habit.target) || !["check", "count"].includes(habit.target.type) || !Number.isInteger(habit.target.min) || !Number.isInteger(habit.target.value) || habit.target.min < 1 || habit.target.min > habit.target.value) throw new Error("The backup contains an invalid habit.");
+        }
+        const habitIds = new Set(upgraded.habits.map(habit => habit.id));
         const entryKeys = new Set();
-        for (const entry of value.habitEntries) {
+        for (const entry of upgraded.habitEntries) {
           if (!isText(entry.habitId, 100) || !habitIds.has(entry.habitId) || !isDate(entry.date) || entry.completed !== true) throw new Error("The backup contains an invalid habit entry.");
           const key = `${entry.habitId}:${entry.date}`;
           if (entryKeys.has(key)) throw new Error("The backup contains duplicate habit completions.");
           entryKeys.add(key);
         }
-        for (const session of value.focusSessions) if (!isText(session.title, 120) || !Array.isArray(session.steps) || session.steps.length < 2 || session.steps.length > 3 || session.steps.some(step => !isText(step, 200) || !step.trim()) || !isDate(session.date) || !Number.isFinite(session.durationSeconds) || session.durationSeconds < 0 || session.durationSeconds > 300) throw new Error("The backup contains an invalid focus session.");
-        for (const checkin of value.checkins) if (!isDate(checkin.date) || !["morning", "afternoon", "evening"].includes(checkin.period) || !Number.isInteger(checkin.energy) || checkin.energy < 1 || checkin.energy > 5 || !["Low", "Flat", "Steady", "Good", "Great"].includes(checkin.mood) || !isText(checkin.note, 500) || !isText(checkin.checkedAt, 40) || Number.isNaN(Date.parse(checkin.checkedAt))) throw new Error("The backup contains an invalid check-in.");
-        for (const log of value.learningLogs) if (!isText(log.technology, 80) || !isText(log.topic, 100) || !isText(log.notes, 3000) || !isDate(log.date) || !Number.isInteger(log.minutes) || log.minutes < 1 || log.minutes > 1440) throw new Error("The backup contains an invalid learning session.");
-        if (new Set(value.checkins.map(checkin => `${checkin.date}:${checkin.period}`)).size !== value.checkins.length) throw new Error("The backup contains multiple check-ins for the same time of day.");
+        for (const session of upgraded.focusSessions) if (!isText(session.title, 120) || !Array.isArray(session.steps) || session.steps.length < 2 || session.steps.length > 3 || session.steps.some(step => !isText(step, 200) || !step.trim()) || !isDate(session.date) || !Number.isFinite(session.durationSeconds) || session.durationSeconds < 0 || session.durationSeconds > 300) throw new Error("The backup contains an invalid focus session.");
+        for (const checkin of upgraded.checkins) if (!isDate(checkin.date) || !["morning", "afternoon", "evening"].includes(checkin.period) || !Number.isInteger(checkin.energy) || checkin.energy < 1 || checkin.energy > 5 || !["Low", "Flat", "Steady", "Good", "Great"].includes(checkin.mood) || !isText(checkin.note, 500) || !isText(checkin.checkedAt, 40) || Number.isNaN(Date.parse(checkin.checkedAt))) throw new Error("The backup contains an invalid check-in.");
+        for (const log of upgraded.learningLogs) if (!isText(log.technology, 80) || !isText(log.topic, 100) || !isText(log.notes, 3000) || !isDate(log.date) || !Number.isInteger(log.minutes) || log.minutes < 1 || log.minutes > 1440) throw new Error("The backup contains an invalid learning session.");
+        for (const review of upgraded.reviews) {
+          if (!isMonday(review.weekStart) || !isText(review.worked, 3000) || !isText(review.blocked, 3000) || !isText(review.change, 3000) || !isText(review.createdAt, 40) || Number.isNaN(Date.parse(review.createdAt)) || !isRecord(review.meta)) throw new Error("The backup contains an invalid weekly review.");
+        }
+        for (const exception of upgraded.exceptions) if (!habitIds.has(exception.habitId) || !isDate(exception.date) || !["grace", "skip"].includes(exception.kind) || !isText(exception.note, 500) || !isText(exception.createdAt, 40) || Number.isNaN(Date.parse(exception.createdAt)) || !isRecord(exception.meta)) throw new Error("The backup contains an invalid habit exception.");
+        if (new Set(upgraded.checkins.map(checkin => `${checkin.date}:${checkin.period}`)).size !== upgraded.checkins.length) throw new Error("The backup contains multiple check-ins for the same time of day.");
         return {
+          ...upgraded,
           schemaVersion: SCHEMA_VERSION,
-          habits: value.habits.map(h => ({ id: h.id, name: h.name, frequency: h.frequency, active: h.active, createdAt: isText(h.createdAt, 40) ? h.createdAt : new Date().toISOString() })),
-          habitEntries: value.habitEntries.map(e => ({ id: e.id, habitId: e.habitId, date: e.date, completed: true })),
-          focusSessions: value.focusSessions.map(s => ({ id: s.id, title: s.title, steps: s.steps.map(step => isText(step, 200) ? step : "").filter(Boolean), date: s.date, durationSeconds: s.durationSeconds })),
-          checkins: value.checkins.map(c => ({ id: c.id, date: c.date, period: c.period, checkedAt: c.checkedAt, energy: c.energy, mood: c.mood, note: c.note })),
-          learningLogs: value.learningLogs.map(l => ({ id: l.id, technology: l.technology, topic: l.topic, notes: l.notes, date: l.date, minutes: l.minutes }))
+          settings: { ...SETTINGS_DEFAULT, ...settings },
+          habits: upgraded.habits.map(h => ({ ...h, createdAt: isText(h.createdAt, 40) ? h.createdAt : new Date().toISOString() })),
+          habitEntries: upgraded.habitEntries.map(e => ({ ...e, completed: true })),
+          focusSessions: upgraded.focusSessions.map(s => ({ ...s, steps: s.steps.map(step => isText(step, 200) ? step : "").filter(Boolean) })),
+          checkins: upgraded.checkins.map(c => ({ ...c })),
+          learningLogs: upgraded.learningLogs.map(l => ({ ...l })),
+          reviews: upgraded.reviews.map(review => ({ ...COLS.reviews.defaults(), ...review })),
+          exceptions: upgraded.exceptions.map(exception => ({ ...COLS.exceptions.defaults(), ...exception }))
         };
       }
 
@@ -538,12 +685,23 @@
       function loadData() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return freshData();
+        let parsed;
+        let loaded;
         try {
-          return validateData(JSON.parse(raw));
+          parsed = JSON.parse(raw);
+          loaded = validateData(parsed);
         } catch (error) {
           showNotice(`Saved data could not be loaded: ${error.message}. Your stored data was left unchanged.`, "error");
           return freshData();
         }
+        if (parsed.schemaVersion !== SCHEMA_VERSION) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+          } catch (error) {
+            showNotice(`Your data was upgraded for this session, but the migrated copy could not be saved: ${error.message}. The original stored data remains unchanged.`, "error");
+          }
+        }
+        return loaded;
       }
 
       function el(tag, className, text) {
@@ -551,6 +709,23 @@
         if (className) node.className = className;
         if (text !== undefined) node.textContent = text;
         return node;
+      }
+
+      function renderSchemaDocs() {
+        const table = $("#schema-docs-table");
+        table.replaceChildren();
+        const head = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        for (const label of ["Entity", "Purpose", "Fields"]) headerRow.append(el("th", "", label));
+        head.append(headerRow);
+        const body = document.createElement("tbody");
+        for (const [name, schema] of Object.entries(COLS)) {
+          const row = document.createElement("tr");
+          row.append(el("th", "", name), el("td", "", schema.doc), el("td", "schema-fields", schema.fields.join(", ")));
+          body.append(row);
+        }
+        table.append(head, body);
+        $("#schema-version-note").textContent = `Schema version v${SCHEMA_VERSION} · Data stays on this device · Import replaces the current data. Keep your exported backup somewhere safe.`;
       }
 
       function emptyState(title, message) {
@@ -1065,6 +1240,7 @@
         renderFocusHistory();
         renderCheckin();
         renderLearning();
+        renderSchemaDocs();
       }
 
       function navigate(page) {
@@ -1081,7 +1257,8 @@
       }
 
       function downloadBackup() {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const backup = { app: "streak", schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), data };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -1142,7 +1319,7 @@
           existing.name = name;
           existing.frequency = $("#habit-frequency").value;
         } else {
-          data.habits.push({ id: uid(), name, frequency: $("#habit-frequency").value, active: true, createdAt: new Date().toISOString() });
+          data.habits.push({ id: uid(), ...COLS.habits.defaults(), name, frequency: $("#habit-frequency").value, active: true, createdAt: new Date().toISOString() });
         }
         if (save()) { $("#habit-dialog").close(); $("#habit-form").reset(); showNotice(editingHabitId ? "Habit updated." : "Habit added."); }
       });

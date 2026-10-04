@@ -47,3 +47,10 @@ Record each implementation change and its verification here **before committing*
 - **Checks run:** `npm run gate`; `git diff --check`; editor diagnostics; browser verification over local HTTP for existing-v1 LocalStorage migration, legacy-v1 import, newer-version import rejection, and the v2 schema documentation table.
 - **Results:** **PASS** — project checks passed, 9 tests passed, 0 failed; `git diff --check` passed; editor diagnostics reported no errors. Browser checks confirmed v1 local data upgraded and persisted as v2 with its habit and completion intact, defaults and empty collections were added, v1 backup import succeeded, schema v3 import was rejected without replacing data, and the Data settings page displays v2 plus both new entities. The browser test server was corrected to serve `sw.js` with a JavaScript MIME type; the app then loaded without the harness-related offline warning.
 - **Commit:** Pending.
+
+### 2026-10-04 — Add habit implementation cues
+
+- **Change summary:** Add anchor, place, and optional time inputs to habit create/edit; persist and prefill cue data; render cues as text on Today and the habits list; show the specified non-blocking cue reminder when saving without an anchor; refresh the service-worker shell cache.
+- **Checks run:** `npm run gate`; `git diff --check`; editor diagnostics; browser checks for cue create/edit round-trip, rendered cue on Today and habits list, injected markup remaining text, missing-anchor reminder, and 360px dialog/layout fit.
+- **Results:** **PASS** — project checks passed, 10 tests passed, 0 failed; `git diff --check` passed; editor diagnostics reported no errors. Browser checks confirmed cue fields save and repopulate on edit, render on Today and the habits list, and treat `<img onerror>` input as text (zero image nodes). Saving without an anchor displayed the required reminder and retained the cue. At 360px, all cue fields remained visible, the dialog fit within the viewport, and no horizontal overflow occurred. Updated and verified service-worker cache `daymark-shell-v14`.
+- **Commit:** Pending.

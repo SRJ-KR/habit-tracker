@@ -114,6 +114,8 @@
     .habit-check.done { background: var(--green); border-color: var(--green); }
     .habit-name { font-size: 12px; font-weight: 620; }
     .habit-row.complete .habit-name { color: #969b91; text-decoration: line-through; }
+    .habit-copy { display: grid; flex: 1; gap: 3px; min-width: 0; }
+    .habit-cue { color: var(--muted); font-size: 10px; line-height: 1.35; overflow-wrap: anywhere; }
     .habit-reward { color: #8b6820; font-size: 9px; font-weight: 720; margin-left: auto; white-space: nowrap; }
     .habit-row.complete .habit-reward { color: #557b50; }
     .habit-meta { color: #93998f; font-size: 10px; margin-left: auto; white-space: nowrap; }
@@ -436,6 +438,10 @@
     <div class="dialog-body"><form id="habit-form" class="field-grid">
       <div class="field full"><label for="habit-name">Habit name</label><input id="habit-name" maxlength="80" placeholder="e.g. Read for 10 minutes" required></div>
       <div class="field full"><label for="habit-frequency">Frequency</label><select id="habit-frequency"><option value="daily">Every day</option><option value="weekdays">Weekdays</option></select><span class="field-hint">A missed weekday won't break your streak on a weekend.</span></div>
+      <div class="field full"><span class="field-label">When will you do it?</span></div>
+      <div class="field full"><label for="habit-cue-anchor">Anchor (After I...)</label><input id="habit-cue-anchor" maxlength="160" placeholder="e.g. finish breakfast"></div>
+      <div class="field"><label for="habit-cue-place">Place</label><input id="habit-cue-place" maxlength="120" placeholder="e.g. my desk"></div>
+      <div class="field"><label for="habit-cue-time">Time (optional)</label><input id="habit-cue-time" maxlength="80" placeholder="e.g. around 8 am"></div>
       <div class="form-actions"><button class="button" type="submit" id="habit-save-button">Add habit</button><button class="button secondary" type="button" data-close="habit-dialog">Cancel</button></div>
     </form></div>
   </dialog>
@@ -890,11 +896,25 @@
         check.setAttribute("aria-pressed", String(done));
         check.addEventListener("click", () => toggleHabit(habit.id));
         const name = el("span", "habit-name", habit.name);
-        row.append(check, name);
+        const copy = el("div", "habit-copy");
+        copy.append(name);
+        const cue = habitCueLabel(habit);
+        if (cue) copy.append(el("span", "habit-cue", cue));
+        row.append(check, copy);
         row.append(el("span", "habit-reward", done ? "+10 earned" : "+10 points"));
         const meta = el("span", "habit-meta", compact ? (streakFor(habit) ? `${streakFor(habit)}d streak` : habit.frequency === "weekdays" ? "Weekdays" : "Daily") : (habit.frequency === "weekdays" ? "Weekdays" : "Daily"));
         row.append(meta);
         return row;
+      }
+
+      function habitCueLabel(habit) {
+        const anchor = habit.cue?.anchor?.trim() || "";
+        const place = habit.cue?.place?.trim() || "";
+        const time = habit.cue?.time?.trim() || "";
+        if (!anchor && !place && !time) return "";
+        const location = place ? ` at ${place}` : "";
+        if (anchor) return `After ${anchor}${location}${time ? ` · ${time}` : ""}`;
+        return `${place ? `At ${place}` : ""}${place && time ? " · " : ""}${time}`;
       }
 
       function renderHabitRewardPlan() {
@@ -991,6 +1011,8 @@
           } else row.append(el("span", "tag", "Paused"));
           const main = el("div", "data-row-main");
           main.append(el("div", "data-row-title", habit.name), el("div", "data-row-sub", `${habit.frequency === "weekdays" ? "Weekdays" : "Daily"} · ${habit.active ? `${streakFor(habit)}-day streak` : "Not included in daily progress"}`));
+          const cue = habitCueLabel(habit);
+          if (cue) main.append(el("div", "data-row-sub habit-cue", cue));
           const actions = el("div", "data-row-actions");
           const edit = el("button", "quiet-button", "Edit");
           edit.type = "button";
@@ -1021,6 +1043,9 @@
         $("#habit-save-button").textContent = habit ? "Save changes" : "Add habit";
         $("#habit-name").value = habit ? habit.name : "";
         $("#habit-frequency").value = habit ? habit.frequency : "daily";
+        $("#habit-cue-anchor").value = habit?.cue?.anchor || "";
+        $("#habit-cue-place").value = habit?.cue?.place || "";
+        $("#habit-cue-time").value = habit?.cue?.time || "";
         $("#habit-dialog").showModal();
         $("#habit-name").focus();
       }
@@ -1313,15 +1338,26 @@
         event.preventDefault();
         const name = $("#habit-name").value.trim();
         if (!name) return;
+        const cue = {
+          anchor: $("#habit-cue-anchor").value.trim(),
+          place: $("#habit-cue-place").value.trim(),
+          time: $("#habit-cue-time").value.trim()
+        };
+        const wasEditing = Boolean(editingHabitId);
         if (editingHabitId) {
           const existing = data.habits.find(habit => habit.id === editingHabitId);
           if (!existing) { showNotice("That habit no longer exists. Refresh and try again.", "error"); return; }
           existing.name = name;
           existing.frequency = $("#habit-frequency").value;
+          existing.cue = cue;
         } else {
-          data.habits.push({ id: uid(), ...COLS.habits.defaults(), name, frequency: $("#habit-frequency").value, active: true, createdAt: new Date().toISOString() });
+          data.habits.push({ id: uid(), ...COLS.habits.defaults(), name, frequency: $("#habit-frequency").value, cue, active: true, createdAt: new Date().toISOString() });
         }
-        if (save()) { $("#habit-dialog").close(); $("#habit-form").reset(); showNotice(editingHabitId ? "Habit updated." : "Habit added."); }
+        if (save()) {
+          $("#habit-dialog").close();
+          $("#habit-form").reset();
+          showNotice(!cue.anchor ? "Habits with a cue are far more likely to happen." : wasEditing ? "Habit updated." : "Habit added.");
+        }
       });
       $("#focus-form").addEventListener("submit", event => {
         event.preventDefault();

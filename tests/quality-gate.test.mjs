@@ -87,6 +87,23 @@ test("daily habits show a recurring reward plan and offer the next eligible acti
   assert.doesNotMatch(html, /button\.onclick\s*=/);
 });
 
+test("habit cues round-trip through the dialog and render as text in both habit views", () => {
+  for (const [id, maxlength] of [["habit-cue-anchor", 160], ["habit-cue-place", 120], ["habit-cue-time", 80]]) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*maxlength="${maxlength}"`));
+  }
+  assert.match(html, /field-label">When will you do it\?/);
+  assert.match(html, /value = habit\?\.cue\?\.anchor \|\| ""/);
+  assert.match(html, /value = habit\?\.cue\?\.place \|\| ""/);
+  assert.match(html, /value = habit\?\.cue\?\.time \|\| ""/);
+  assert.match(html, /anchor: \$\("#habit-cue-anchor"\)\.value\.trim\(\)/);
+  assert.match(html, /existing\.cue = cue/);
+  assert.match(html, /function habitCueLabel\(habit\)/);
+  assert.match(html, /copy\.append\(el\("span", "habit-cue", cue\)\)/);
+  assert.match(html, /main\.append\(el\("div", "data-row-sub habit-cue", cue\)\)/);
+  assert.match(html, /showNotice\(!cue\.anchor \? "Habits with a cue are far more likely to happen\."/);
+  assert.match(html, /function el\(tag, className, text\)[\s\S]*?node\.textContent = text/);
+});
+
 test("untrusted text is rendered as text and imported JSON is validated before use", () => {
   assert.doesNotMatch(html, /\.innerHTML\b/);
   assert.doesNotMatch(html, /\son(?:click|change|submit)\s*=/i);

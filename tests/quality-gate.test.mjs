@@ -26,6 +26,20 @@ test("every MVP module has a reachable navigation entry and rendered section", (
   }
 });
 
+test("all UI elements inherit one font family and include phone/tablet breakpoints", () => {
+  assert.match(html, /--font-family:\s*system-ui,\s*sans-serif/);
+  assert.match(html, /\*,\s*\*::before,\s*\*::after\s*\{\s*box-sizing:\s*border-box;\s*font-family:\s*inherit;/);
+  assert.match(html, /@media\s*\(max-width:\s*760px\)/);
+  assert.match(html, /@media\s*\(max-width:\s*430px\)/);
+  assert.match(html, /@media\s*\(max-width:\s*410px\)/);
+  assert.match(html, /\.field-grid\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(html, /env\(safe-area-inset-top\)/);
+  assert.match(html, /body\s*\{[^}]*min-width:\s*0/);
+  assert.match(html, /\.home-grid\s*>\s*\*,\s*\.focus-layout\s*>\s*\*,\s*\.checkin-layout\s*>\s*\*\s*\{\s*min-width:\s*0/);
+  assert.match(html, /\.field\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(html, /\.mood-option\s*\{[^}]*min-width:\s*0/);
+});
+
 test("untrusted text is rendered as text and imported JSON is validated before use", () => {
   assert.doesNotMatch(html, /\.innerHTML\b/);
   assert.doesNotMatch(html, /\son(?:click|change|submit)\s*=/i);

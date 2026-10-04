@@ -9,7 +9,7 @@ Daymark is a private, single-user productivity and habit tracker built as a stat
 - Energy and mood check-ins for morning, afternoon, and evening, with recent and time-of-day averages.
 - A technology learning log with topic, duration, date, and plain-text or Markdown notes.
 - JSON backup export and validated import.
-- Responsive layout and a service-worker-cached app shell for offline use.
+- Responsive phone, tablet, and desktop layouts; one inherited system font family across the UI; and a service-worker-cached app shell for offline use.
 
 ## Run locally
 

@@ -40,6 +40,24 @@ test("all UI elements inherit one font family and include phone/tablet breakpoin
   assert.match(html, /\.mood-option\s*\{[^}]*min-width:\s*0/);
 });
 
+test("gameful progress rewards completed actions without scoring check-ins", () => {
+  const pointsFunction = html.match(/function momentumPoints\(\) \{([\s\S]*?)\n      \}/);
+  assert.ok(pointsFunction, "momentum points calculation is missing");
+  assert.match(pointsFunction[1], /data\.habitEntries\.length \* 10/);
+  assert.match(pointsFunction[1], /completedFocusSessions \* 25/);
+  assert.match(pointsFunction[1], /data\.learningLogs\.length \* 15/);
+  assert.doesNotMatch(pointsFunction[1], /checkins/);
+  assert.match(html, /100 points to Level/);
+  assert.match(html, /\+10 habit · \+25 focus · \+15 learning/);
+  assert.match(html, /Check-ins aren't scored · points don't expire/);
+  assert.match(html, /Earned · first habit complete/);
+  assert.match(html, /\+10 Momentum points/);
+  assert.match(html, /\+25 Momentum points/);
+  assert.match(html, /\+15 Momentum points/);
+  assert.match(html, /Today's tiny quest/);
+  assert.match(html, /aria-label="Daily quest progress"/);
+});
+
 test("untrusted text is rendered as text and imported JSON is validated before use", () => {
   assert.doesNotMatch(html, /\.innerHTML\b/);
   assert.doesNotMatch(html, /\son(?:click|change|submit)\s*=/i);

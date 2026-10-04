@@ -8,8 +8,11 @@ Daymark is a private, single-user productivity and habit tracker built as a stat
 - A five-minute focus timer with a task and two or three small action steps.
 - Energy and mood check-ins for morning, afternoon, and evening, with recent and time-of-day averages.
 - A technology learning log with topic, duration, date, and plain-text or Markdown notes.
+- Daily quests, lifetime momentum points, levels, and milestones earned from completed habits, focus sprints, and learning sessions.
 - JSON backup export and validated import.
 - Responsive phone, tablet, and desktop layouts; one inherited system font family across the UI; and a service-worker-cached app shell for offline use.
+
+Progress rewards reflect completed actions only; check-ins are never scored, points do not expire, and there are no missed-day penalties or locked features.
 
 ## Run locally
 

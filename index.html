@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f7f2">
-  <meta name="description" content="A calm, private space to build habits, start focused work, check in with your energy, and learn new technology.">
+  <meta name="description" content="A private, encouraging space to build habits, start focused work, check in with your energy, and learn new technology.">
   <link rel="manifest" href="./manifest.json">
   <title>Daymark — Make today count</title>
   <style>
@@ -71,6 +71,36 @@
     .stat-icon { align-items: center; background: #f3f5ee; border-radius: 7px; color: var(--green); display: flex; font-size: 14px; height: 27px; justify-content: center; width: 27px; }
     .stat-value { font-size: 25px; font-weight: 740; letter-spacing: -.8px; margin-top: 13px; }
     .stat-foot { color: #92978d; font-size: 10px; margin-top: 3px; }
+    .quest-card { align-items: stretch; background: linear-gradient(118deg, #224d36, #34754f); border: 1px solid #316b49; border-radius: 13px; box-shadow: 0 12px 28px rgba(37, 87, 57, .18); color: white; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 220px; margin-bottom: 16px; overflow: hidden; padding: 20px; position: relative; }
+    .quest-card::after { border: 1px solid rgba(255,255,255,.12); border-radius: 50%; content: ""; height: 210px; pointer-events: none; position: absolute; right: 170px; top: -140px; width: 210px; }
+    .quest-main, .score-panel { position: relative; z-index: 1; }
+    .quest-kicker, .score-heading { align-items: center; color: #d8e9cf; display: flex; font-size: 10px; font-weight: 760; gap: 9px; letter-spacing: 1px; text-transform: uppercase; }
+    .quest-status { background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.18); border-radius: 99px; color: white; font-size: 9px; letter-spacing: .5px; padding: 4px 7px; }
+    .quest-main h2 { font-size: 20px; letter-spacing: -.45px; margin: 11px 0 5px; }
+    .quest-main p { color: #e1eee0; font-size: 11px; line-height: 1.55; margin: 0 0 13px; max-width: 470px; }
+    .quest-progress-caption { color: #e5efe2; display: flex; font-size: 10px; justify-content: space-between; margin: 0 0 6px; }
+    .quest-progress { background: rgba(255,255,255,.2); border-radius: 99px; height: 7px; margin-bottom: 13px; max-width: 430px; overflow: hidden; }
+    .quest-progress > span { background: #f2c65f; border-radius: inherit; display: block; height: 100%; transition: width .25s ease; width: 0; }
+    .quest-action { background: #fff; border: 1px solid #fff; border-radius: 7px; color: #214b34; font-size: 11px; font-weight: 740; min-height: 34px; padding: 0 12px; }
+    .quest-action:hover { background: #f7f2df; }
+    .score-panel { align-content: center; background: rgba(16, 48, 31, .36); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; display: grid; gap: 5px; padding: 13px 15px; }
+    .score-heading { color: #e2ecd9; font-size: 9px; justify-content: space-between; letter-spacing: .8px; }
+    .score-star { color: #ffd775; font-size: 18px; }
+    .score-value { font-size: 31px; font-weight: 780; letter-spacing: -.9px; line-height: 1; }
+    .score-level { color: #e1eee0; font-size: 10px; }
+    .score-progress { background: rgba(255,255,255,.2); border-radius: 99px; height: 5px; margin-top: 4px; overflow: hidden; }
+    .score-progress > span { background: #f2c65f; border-radius: inherit; display: block; height: 100%; transition: width .25s ease; width: 0; }
+    .score-next { color: #d7e7d3; font-size: 9px; }
+    .score-policy { border-top: 1px solid rgba(255,255,255,.16); color: #d7e7d3; font-size: 9px; line-height: 1.45; margin-top: 4px; padding-top: 7px; }
+    .badge-row { display: grid; gap: 9px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 16px; }
+    .badge-card { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 9px; display: flex; gap: 9px; min-width: 0; padding: 10px 12px; }
+    .badge-icon { align-items: center; background: #f1f2ee; border-radius: 50%; color: #969c91; display: inline-flex; flex: 0 0 30px; font-size: 14px; height: 30px; justify-content: center; }
+    .badge-card.earned { background: #fffaf0; border-color: #eedba8; }
+    .badge-card.earned .badge-icon { background: #f6e8bb; color: #795b17; }
+    .badge-copy { display: grid; gap: 2px; min-width: 0; }
+    .badge-title { color: #4b5548; font-size: 10px; font-weight: 720; overflow-wrap: anywhere; }
+    .badge-status { color: #8a9086; font-size: 9px; }
+    .badge-card.earned .badge-status { color: #89691d; }
     .home-grid { align-items: start; grid-template-columns: minmax(0, 1.45fr) minmax(260px, .8fr); margin-top: 17px; }
     .home-grid > *, .focus-layout > *, .checkin-layout > * { min-width: 0; }
     .panel { padding: 19px 20px; }
@@ -185,6 +215,8 @@
       .page-heading { align-items: flex-start; gap: 12px; margin: 27px 0 19px; }
       .page-heading .button { flex: 0 0 auto; }
       .home-grid, .focus-layout, .checkin-layout { grid-template-columns: 1fr; }
+      .quest-card { grid-template-columns: minmax(0, 1.2fr) minmax(165px, .8fr); padding: 16px; }
+      .score-panel { padding: 12px; }
       .habit-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .overview-tile { padding: 13px; }
     }
@@ -196,6 +228,14 @@
       .stat-value { font-size: 22px; }
       .page-heading { flex-wrap: wrap; }
       .page-heading .button { min-height: 34px; }
+      .quest-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .quest-main h2 { font-size: 18px; }
+      .score-panel { grid-template-columns: 1fr auto; }
+      .score-heading, .score-progress, .score-next { grid-column: 1 / -1; }
+      .score-value { grid-column: 1; grid-row: 2; }
+      .score-level { align-self: end; grid-column: 2; grid-row: 2; text-align: right; }
+      .badge-row { gap: 6px; }
+      .badge-card { align-items: flex-start; flex-direction: column; gap: 6px; padding: 9px; }
       .field-grid { grid-template-columns: minmax(0, 1fr); }
       .field.full, .form-actions { grid-column: auto; }
       .data-row { align-items: flex-start; flex-wrap: wrap; }
@@ -235,6 +275,35 @@
           <div class="page-heading">
             <div><p class="eyebrow">A little progress adds up</p><h1 id="greeting">Make today count.</h1><p class="subtitle">Build momentum one small, intentional step at a time.</p></div>
             <button class="button" data-go="focus">＋ Start a 5-min sprint</button>
+          </div>
+          <section class="quest-card" aria-labelledby="quest-title">
+            <div class="quest-main">
+              <div class="quest-kicker">Today's tiny quest <span class="quest-status" id="quest-status">READY</span></div>
+              <h2 id="quest-title">Pick one small win</h2>
+              <p id="quest-description">One clear next step is enough to get moving. Your progress is yours to keep.</p>
+              <div class="quest-progress-caption"><span id="quest-progress-label">0 of 1 actions</span><span id="quest-progress-percent">0%</span></div>
+              <div class="quest-progress" id="quest-progress-track" role="progressbar" aria-label="Daily quest progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="quest-progress-bar"></span></div>
+              <button class="quest-action" id="quest-action" data-go="habits">Choose a habit →</button>
+            </div>
+            <aside class="score-panel" aria-label="Momentum score">
+              <div class="score-heading"><span>Momentum points</span><span class="score-star" aria-hidden="true">✦</span></div>
+              <div class="score-value" id="momentum-points">0</div>
+              <div class="score-level" id="momentum-level">Level 1 · First steps</div>
+              <div class="score-progress" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="momentum-progress-bar"></span></div>
+              <div class="score-next" id="momentum-next-level">100 points to Level 2</div>
+              <div class="score-policy">+10 habit · +25 focus · +15 learning<br>Check-ins aren't scored · points don't expire</div>
+            </aside>
+          </section>
+          <div class="badge-row" aria-label="Earned milestones">
+            <article class="badge-card" id="badge-habit" aria-label="Habit starter milestone">
+              <span class="badge-icon" aria-hidden="true">✓</span><span class="badge-copy"><span class="badge-title">Habit starter</span><span class="badge-status" id="badge-habit-status">Complete a habit</span></span>
+            </article>
+            <article class="badge-card" id="badge-focus" aria-label="Focus finisher milestone">
+              <span class="badge-icon" aria-hidden="true">◷</span><span class="badge-copy"><span class="badge-title">Focus finisher</span><span class="badge-status" id="badge-focus-status">Finish a 5-minute sprint</span></span>
+            </article>
+            <article class="badge-card" id="badge-learning" aria-label="Curious mind milestone">
+              <span class="badge-icon" aria-hidden="true">↗</span><span class="badge-copy"><span class="badge-title">Curious mind</span><span class="badge-status" id="badge-learning-status">Log a learning session</span></span>
+            </article>
           </div>
           <div class="grid stats-grid">
             <article class="card stat-card"><div class="stat-top"><span>Habits today</span><span class="stat-icon">◉</span></div><div class="stat-value" id="stat-habits">0 / 0</div><div class="stat-foot" id="stat-habit-foot">A fresh start</div></article>
@@ -503,7 +572,83 @@
         return key >= weekStart() && key <= today();
       }
 
+      function momentumPoints() {
+        const completedFocusSessions = data.focusSessions.filter(session => session.durationSeconds >= 300).length;
+        return data.habitEntries.length * 10 + completedFocusSessions * 25 + data.learningLogs.length * 15;
+      }
+
+      function setMilestone(name, earned, earnedLabel, nextLabel) {
+        $(`#badge-${name}`).classList.toggle("earned", earned);
+        $(`#badge-${name}-status`).textContent = earned ? earnedLabel : nextLabel;
+      }
+
+      function renderMomentum() {
+        const points = momentumPoints();
+        const level = Math.floor(points / 100) + 1;
+        const levelProgress = points % 100;
+        const levelNames = ["First steps", "Finding rhythm", "Steady builder", "Momentum maker", "Habit architect"];
+        const levelName = levelNames[Math.min(level - 1, levelNames.length - 1)];
+        const completedFocusSessions = data.focusSessions.filter(session => session.durationSeconds >= 300);
+        const todayFocusWin = completedFocusSessions.some(session => session.date === today());
+        const scheduledHabits = data.habits.filter(habit => habit.active && isScheduled(habit, today()));
+        const habitsDone = scheduledHabits.filter(habit => habitEntry(habit.id)).length;
+        const focusButton = $("#quest-action");
+
+        $("#momentum-points").textContent = String(points);
+        $("#momentum-level").textContent = `Level ${level} · ${levelName}`;
+        $("#momentum-progress-bar").style.width = `${levelProgress}%`;
+        $("#momentum-progress-bar").parentElement.setAttribute("aria-valuenow", String(levelProgress));
+        $("#momentum-next-level").textContent = `${100 - levelProgress} points to Level ${level + 1}`;
+        setMilestone("habit", data.habitEntries.length > 0, "Earned · first habit complete", "Complete a habit");
+        setMilestone("focus", completedFocusSessions.length > 0, "Earned · sprint complete", "Finish a 5-minute sprint");
+        setMilestone("learning", data.learningLogs.length > 0, "Earned · session logged", "Log a learning session");
+
+        let progress, total, label, title, description, status, action, destination;
+        if (scheduledHabits.length) {
+          total = scheduledHabits.length;
+          progress = habitsDone;
+          label = `${habitsDone} of ${total} ${total === 1 ? "habit" : "habits"} today`;
+          destination = "habits";
+          if (habitsDone === total) {
+            status = "COMPLETE";
+            title = "Habit quest complete!";
+            description = todayFocusWin
+              ? "You showed up for your habits and finished a focus sprint. Those wins are yours to keep."
+              : "You showed up for today's habits. Want an optional bonus? Try one five-minute focus sprint.";
+            action = todayFocusWin ? "See your focus wins →" : "Try a bonus sprint →";
+            destination = "focus";
+          } else {
+            status = habitsDone ? "IN PROGRESS" : "READY";
+            title = habitsDone ? "One small habit at a time" : "Start with one tiny habit";
+            description = "Check off any routine that fits today. Each completion earns 10 Momentum points.";
+            action = "Choose a habit →";
+          }
+        } else {
+          total = 1;
+          progress = todayFocusWin ? 1 : 0;
+          label = todayFocusWin ? "1 of 1 focus sprints" : "0 of 1 focus sprints";
+          destination = todayFocusWin ? "learning" : "focus";
+          status = todayFocusWin ? "COMPLETE" : "READY";
+          title = todayFocusWin ? "Five-minute quest complete!" : "Give one task five minutes";
+          description = todayFocusWin
+            ? "You made a start and earned 25 Momentum points. You can stop here or log what you learned."
+            : "Make the first step small. Finish one five-minute sprint to earn 25 Momentum points.";
+          action = todayFocusWin ? "Log a learning session →" : "Launch focus timer →";
+        }
+        const percent = Math.round(progress / total * 100);
+        $("#quest-status").textContent = status;
+        $("#quest-title").textContent = title;
+        $("#quest-description").textContent = description;
+        $("#quest-progress-label").textContent = label;
+        $("#quest-progress-percent").textContent = `${percent}%`;
+        $("#quest-progress-bar").style.width = `${percent}%`;
+        $("#quest-progress-track").setAttribute("aria-valuenow", String(percent));
+        focusButton.textContent = action;
+        focusButton.dataset.go = destination;
+      }
+
       function renderHome() {
+        renderMomentum();
         const activeHabits = data.habits.filter(habit => habit.active);
         const scheduledToday = activeHabits.filter(habit => isScheduled(habit, today()));
         const scheduledDone = scheduledToday.filter(habit => habitEntry(habit.id)).length;
@@ -551,9 +696,13 @@
         const habit = data.habits.find(item => item.id === id && item.active);
         if (!habit) return;
         const existing = habitEntry(id);
-        if (existing) data.habitEntries = data.habitEntries.filter(entry => entry !== existing);
-        else data.habitEntries.push({ id: uid(), habitId: id, date: today(), completed: true });
-        save();
+        if (existing) {
+          data.habitEntries = data.habitEntries.filter(entry => entry !== existing);
+          if (save()) showNotice("Habit completion removed. Your points now reflect your completed actions.");
+        } else {
+          data.habitEntries.push({ id: uid(), habitId: id, date: today(), completed: true });
+          if (save()) showNotice("+10 Momentum points · Habit checked off. Nice start!");
+        }
       }
 
       function renderHabits() {
@@ -688,8 +837,7 @@
           $("#timer-label").textContent = "You showed up. That's a win.";
           document.title = "Daymark — Make today count";
           data.focusSessions.push({ id: uid(), title: activeFocus.title, steps: activeFocus.steps, date: today(), durationSeconds: 300 });
-          save();
-          showNotice("Five minutes done. You started, and that matters.");
+          if (save()) showNotice("+25 Momentum points · Five minutes complete. You got started!");
         }
       }
 
@@ -940,7 +1088,7 @@
           id: uid(), technology: $("#learning-tech").value.trim(), topic: $("#learning-topic").value.trim(),
           notes: $("#learning-notes").value.trim(), date, minutes
         });
-        if (save()) { $("#learning-dialog").close(); $("#learning-form").reset(); showNotice("Learning session logged."); }
+        if (save()) { $("#learning-dialog").close(); $("#learning-form").reset(); showNotice("+15 Momentum points · Learning session logged. Curiosity counts!"); }
       });
       $("#settings-open").addEventListener("click", () => $("#settings-dialog").showModal());
       $(".brand").addEventListener("click", event => { event.preventDefault(); navigate("home"); });

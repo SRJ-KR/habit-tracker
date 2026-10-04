@@ -114,7 +114,25 @@
     .habit-check.done { background: var(--green); border-color: var(--green); }
     .habit-name { font-size: 12px; font-weight: 620; }
     .habit-row.complete .habit-name { color: #969b91; text-decoration: line-through; }
+    .habit-reward { color: #8b6820; font-size: 9px; font-weight: 720; margin-left: auto; white-space: nowrap; }
+    .habit-row.complete .habit-reward { color: #557b50; }
     .habit-meta { color: #93998f; font-size: 10px; margin-left: auto; white-space: nowrap; }
+    .habit-row.complete .habit-reward + .habit-meta { margin-left: 0; }
+    .habit-reward-plan { background: linear-gradient(115deg, #fffaf0, #fff); border: 1px solid #eedda9; border-radius: 11px; box-shadow: 0 7px 20px rgba(129, 98, 30, .07); margin-bottom: 16px; padding: 17px 19px; }
+    .habit-reward-top { align-items: flex-start; display: flex; gap: 14px; justify-content: space-between; }
+    .habit-reward-title { align-items: center; color: #745817; display: flex; font-size: 12px; font-weight: 760; gap: 8px; }
+    .habit-reward-subtitle { color: #80775f; font-size: 10px; line-height: 1.5; margin-top: 4px; }
+    .daily-earned { color: #785a17; flex: 0 0 auto; font-size: 19px; font-weight: 780; letter-spacing: -.4px; text-align: right; }
+    .daily-earned small { color: #8f805d; display: block; font-size: 9px; font-weight: 600; letter-spacing: 0; }
+    .habit-reward-progress { align-items: center; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) 45px; margin: 13px 0; }
+    .habit-reward-progress .progress-wrap { background: #efe8d5; }
+    .habit-reward-progress .progress-bar { background: #c99a31; }
+    .habit-reward-count { color: #776b4d; font-size: 10px; text-align: right; }
+    .habit-next-row { align-items: center; border-top: 1px solid #eee4c9; display: flex; gap: 12px; justify-content: space-between; padding-top: 12px; }
+    .habit-next-copy { color: #5f5848; font-size: 10px; line-height: 1.5; min-width: 0; }
+    .habit-next-copy strong { color: #4e472f; display: block; font-size: 11px; }
+    .habit-next-action { background: #315f3d; border: 1px solid #315f3d; border-radius: 7px; color: white; flex: 0 0 auto; font-size: 10px; font-weight: 720; min-height: 34px; padding: 0 11px; }
+    .habit-next-action:hover { background: #244b30; }
     .progress-wrap { background: #eff0ea; border-radius: 99px; height: 6px; overflow: hidden; }
     .progress-bar { background: var(--green); border-radius: inherit; height: 100%; transition: width .3s ease; }
     .progress-caption { color: var(--muted); display: flex; font-size: 10px; justify-content: space-between; margin: 12px 0 7px; }
@@ -217,6 +235,7 @@
       .home-grid, .focus-layout, .checkin-layout { grid-template-columns: 1fr; }
       .quest-card { grid-template-columns: minmax(0, 1.2fr) minmax(165px, .8fr); padding: 16px; }
       .score-panel { padding: 12px; }
+      .habit-reward-plan { padding: 15px; }
       .habit-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .overview-tile { padding: 13px; }
     }
@@ -236,6 +255,8 @@
       .score-level { align-self: end; grid-column: 2; grid-row: 2; text-align: right; }
       .badge-row { gap: 6px; }
       .badge-card { align-items: flex-start; flex-direction: column; gap: 6px; padding: 9px; }
+      .habit-next-row { align-items: flex-start; flex-direction: column; }
+      .habit-next-action { width: 100%; }
       .field-grid { grid-template-columns: minmax(0, 1fr); }
       .field.full, .form-actions { grid-column: auto; }
       .data-row { align-items: flex-start; flex-wrap: wrap; }
@@ -333,6 +354,14 @@
         </section>
         <section class="section-page" data-section="habits">
           <div class="page-heading"><div><p class="eyebrow">Consistency over intensity</p><h1>Your habits</h1><p class="subtitle">Keep the routines that make your days feel more like yours.</p></div><button class="button" id="add-habit">＋ Add a habit</button></div>
+          <section class="habit-reward-plan" id="habit-reward-plan" aria-labelledby="habit-reward-heading">
+            <div class="habit-reward-top">
+              <div><div class="habit-reward-title" id="habit-reward-heading"><span aria-hidden="true">✦</span> Today's habit rewards</div><div class="habit-reward-subtitle" id="habit-reward-description">Complete any scheduled habit to earn +10 Momentum points. Every finished habit counts.</div></div>
+              <div class="daily-earned" id="daily-habit-points">+0<small>points earned today</small></div>
+            </div>
+            <div class="habit-reward-progress"><div class="progress-wrap" role="progressbar" aria-label="Today's habit rewards" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar" id="daily-habit-progress" style="width:0%"></div></div><span class="habit-reward-count" id="daily-habit-count">0 / 0</span></div>
+            <div class="habit-next-row"><div class="habit-next-copy"><strong id="habit-next-title">Your next small win</strong><span id="habit-next-description">Choose a habit that fits today; you can earn +10 for each one you complete.</span></div><button class="habit-next-action" id="habit-next-action">Choose a habit →</button></div>
+          </section>
           <div class="habit-overview">
             <article class="card overview-tile"><div class="value" id="habit-page-today">0 / 0</div><div class="label">Completed today</div></article>
             <article class="card overview-tile"><div class="value" id="habit-page-streak">0 days</div><div class="label">Best active streak</div></article>
@@ -687,9 +716,53 @@
         check.addEventListener("click", () => toggleHabit(habit.id));
         const name = el("span", "habit-name", habit.name);
         row.append(check, name);
+        row.append(el("span", "habit-reward", done ? "+10 earned" : "+10 points"));
         const meta = el("span", "habit-meta", compact ? (streakFor(habit) ? `${streakFor(habit)}d streak` : habit.frequency === "weekdays" ? "Weekdays" : "Daily") : (habit.frequency === "weekdays" ? "Weekdays" : "Daily"));
         row.append(meta);
         return row;
+      }
+
+      function renderHabitRewardPlan() {
+        const scheduled = data.habits.filter(habit => habit.active && isScheduled(habit, today()));
+        const completed = scheduled.filter(habit => habitEntry(habit.id));
+        const nextHabit = scheduled.find(habit => !habitEntry(habit.id));
+        const dailyPoints = completed.length * 10;
+        const percent = scheduled.length ? Math.round(completed.length / scheduled.length * 100) : 0;
+        const progress = $(".habit-reward-progress [role='progressbar']");
+        $("#daily-habit-points").replaceChildren(document.createTextNode(`+${dailyPoints}`), el("small", "", "points earned today"));
+        $("#daily-habit-count").textContent = `${completed.length} / ${scheduled.length}`;
+        $("#daily-habit-progress").style.width = `${percent}%`;
+        progress.setAttribute("aria-valuenow", String(percent));
+        const button = $("#habit-next-action");
+        if (nextHabit) {
+          $("#habit-reward-description").textContent = "Earn +10 points every time you complete one of today's scheduled habits. Points add up and never expire.";
+          $("#habit-next-title").textContent = completed.length ? "Nice work. Keep your momentum going." : "Your first small win is ready.";
+          $("#habit-next-description").textContent = `Next up: ${nextHabit.name}. Complete it to earn +10 Momentum points.`;
+          button.textContent = `Complete next · +10`;
+          button.dataset.action = "habit";
+          button.dataset.habitId = nextHabit.id;
+        } else if (scheduled.length) {
+          $("#habit-reward-description").textContent = "Your completed habits earned today's points. The next day is a fresh chance; today's progress stays yours.";
+          $("#habit-next-title").textContent = "Today's habit rewards are complete!";
+          $("#habit-next-description").textContent = `You earned +${dailyPoints} points from ${completed.length} completed ${completed.length === 1 ? "habit" : "habits"}. Your optional next step is a five-minute focus sprint.`;
+          button.textContent = "Try an optional focus sprint →";
+          button.dataset.action = "focus";
+          delete button.dataset.habitId;
+        } else if (data.habits.some(habit => habit.active)) {
+          $("#habit-reward-description").textContent = "Your active habits are not scheduled for today. They will be ready on their next scheduled day.";
+          $("#habit-next-title").textContent = "No habits scheduled today";
+          $("#habit-next-description").textContent = "Rest days count too. Choose an optional five-minute focus sprint if it suits you.";
+          button.textContent = "Optional focus sprint →";
+          button.dataset.action = "focus";
+          delete button.dataset.habitId;
+        } else {
+          $("#habit-reward-description").textContent = "Complete a scheduled habit to earn +10 Momentum points per habit. Points add up and never expire.";
+          $("#habit-next-title").textContent = "Start with one habit that matters to you.";
+          $("#habit-next-description").textContent = "Small, repeatable actions make progress easier to notice.";
+          button.textContent = "＋ Add your first habit";
+          button.dataset.action = "add";
+          delete button.dataset.habitId;
+        }
       }
 
       function toggleHabit(id) {
@@ -698,14 +771,20 @@
         const existing = habitEntry(id);
         if (existing) {
           data.habitEntries = data.habitEntries.filter(entry => entry !== existing);
-          if (save()) showNotice("Habit completion removed. Your points now reflect your completed actions.");
+          if (save()) showNotice(`Habit unchecked · ${streakFor(habit)}-day streak adjusted. Your remaining completed actions keep their points.`);
         } else {
           data.habitEntries.push({ id: uid(), habitId: id, date: today(), completed: true });
-          if (save()) showNotice("+10 Momentum points · Habit checked off. Nice start!");
+          if (save()) {
+            const nextHabit = data.habits.find(item => item.active && isScheduled(item, today()) && !habitEntry(item.id));
+            showNotice(nextHabit
+              ? `+10 Momentum points · ${habit.name} complete! Next up: ${nextHabit.name}.`
+              : `+10 Momentum points · ${habit.name} complete! Today's habit rewards are all yours.`);
+          }
         }
       }
 
       function renderHabits() {
+        renderHabitRewardPlan();
         const active = data.habits.filter(habit => habit.active);
         const todayDone = active.filter(habit => habitEntry(habit.id)).length;
         const maxStreak = Math.max(0, ...active.map(streakFor));
@@ -1040,6 +1119,19 @@
       $$(".nav-button").forEach(button => button.addEventListener("click", () => navigate(button.dataset.page)));
       $$("[data-go]").forEach(button => button.addEventListener("click", () => navigate(button.dataset.go)));
       $("#add-habit").addEventListener("click", () => openHabitDialog());
+      $("#habit-next-action").addEventListener("click", event => {
+        const button = event.currentTarget;
+        if (button.dataset.action === "habit") {
+          const habit = data.habits.find(item => item.id === button.dataset.habitId && item.active && isScheduled(item, today()) && !habitEntry(item.id));
+          if (!habit) {
+            showNotice("That next habit is no longer available. The reward plan has been refreshed.", "error");
+            renderAll();
+            return;
+          }
+          toggleHabit(habit.id);
+        } else if (button.dataset.action === "focus") navigate("focus");
+        else if (button.dataset.action === "add") openHabitDialog();
+      });
       $("#habit-form").addEventListener("submit", event => {
         event.preventDefault();
         const name = $("#habit-name").value.trim();

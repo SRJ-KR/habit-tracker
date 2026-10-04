@@ -58,6 +58,20 @@ test("gameful progress rewards completed actions without scoring check-ins", () 
   assert.match(html, /aria-label="Daily quest progress"/);
 });
 
+test("daily habits show a recurring reward plan and offer the next eligible action", () => {
+  assert.match(html, /id="habit-reward-plan"/);
+  assert.match(html, /Today's habit rewards/);
+  assert.match(html, /Complete any scheduled habit to earn \+10 Momentum points/);
+  assert.match(html, /const dailyPoints = completed\.length \* 10/);
+  assert.match(html, /Next up: \$\{nextHabit\.name\}\. Complete it to earn \+10 Momentum points/);
+  assert.match(html, /Complete next · \+10/);
+  assert.match(html, /Today's habit rewards are all yours/);
+  assert.match(html, /Try an optional focus sprint/);
+  assert.match(html, /button\.dataset\.action === "habit"/);
+  assert.match(html, /data\.habits\.find\(item => item\.id === button\.dataset\.habitId/);
+  assert.doesNotMatch(html, /button\.onclick\s*=/);
+});
+
 test("untrusted text is rendered as text and imported JSON is validated before use", () => {
   assert.doesNotMatch(html, /\.innerHTML\b/);
   assert.doesNotMatch(html, /\son(?:click|change|submit)\s*=/i);

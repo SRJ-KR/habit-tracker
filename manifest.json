@@ -1,0 +1,18 @@
+{
+  "name": "Daymark — Make today count",
+  "short_name": "Daymark",
+  "description": "A calm, private space to build habits, focus, check in, and learn.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f7f2",
+  "theme_color": "#f7f7f2",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

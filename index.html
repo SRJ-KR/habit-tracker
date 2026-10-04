@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f2">
+  <meta name="description" content="A calm, private space to build habits, start focused work, check in with your energy, and learn new technology.">
+  <link rel="manifest" href="./manifest.json">
+  <title>Daymark — Make today count</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20291f;
+      --muted: #72796f;
+      --line: #e7e9df;
+      --paper: #fff;
+      --canvas: #f7f7f2;
+      --green: #285c42;
+      --green-dark: #1d4833;
+      --green-soft: #e8f1e8;
+      --gold: #e5b653;
+      --gold-soft: #fbf2dc;
+      --rose: #f4e8e3;
+      --shadow: 0 10px 32px rgba(40, 54, 39, .055);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); min-width: 320px; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .app-shell { min-height: 100vh; }
+    .sidebar {
+      background: #fff; border-right: 1px solid var(--line); bottom: 0; display: flex;
+      flex-direction: column; left: 0; padding: 27px 18px 20px; position: fixed; top: 0; width: 238px; z-index: 5;
+    }
+    .brand { align-items: center; color: var(--ink); display: flex; font-size: 19px; font-weight: 760; gap: 10px; letter-spacing: -.7px; padding: 0 9px; text-decoration: none; }
+    .brand-mark { align-items: center; background: var(--green); border-radius: 10px; color: white; display: inline-flex; font-size: 15px; height: 32px; justify-content: center; width: 32px; }
+    .side-label { color: #9a9f94; font-size: 10px; font-weight: 750; letter-spacing: 1.2px; margin: 39px 11px 11px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: 4px; }
+    .nav-button { align-items: center; background: transparent; border: 0; border-radius: 9px; color: #646c61; display: flex; font-size: 13px; font-weight: 590; gap: 12px; padding: 11px 12px; text-align: left; transition: background .15s, color .15s; width: 100%; }
+    .nav-button:hover { background: #f5f6f1; color: var(--ink); }
+    .nav-button[aria-current="page"] { background: var(--green-soft); color: var(--green-dark); font-weight: 700; }
+    .nav-icon { align-items: center; display: inline-flex; font-size: 16px; height: 18px; justify-content: center; width: 18px; }
+    .sidebar-bottom { border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.65; margin-top: auto; padding: 15px 9px 0; }
+    .sidebar-bottom strong { color: var(--green); font-weight: 700; }
+    .main { margin-left: 238px; min-height: 100vh; padding: 0 48px 60px; }
+    .topbar { align-items: center; border-bottom: 1px solid var(--line); display: flex; height: 71px; justify-content: space-between; }
+    .crumb { color: var(--muted); font-size: 12px; }
+    .top-actions { align-items: center; display: flex; gap: 11px; }
+    .today-pill { background: white; border: 1px solid var(--line); border-radius: 8px; color: #525a50; font-size: 11px; padding: 8px 11px; }
+    .icon-button { align-items: center; background: white; border: 1px solid var(--line); border-radius: 8px; color: #62695f; display: inline-flex; height: 34px; justify-content: center; width: 36px; }
+    .content { margin: 0 auto; max-width: 1040px; }
+    .page-heading { align-items: flex-end; display: flex; justify-content: space-between; margin: 35px 0 23px; }
+    .eyebrow { color: var(--green); font-size: 10px; font-weight: 750; letter-spacing: 1.25px; margin: 0 0 8px; text-transform: uppercase; }
+    h1 { font-size: clamp(26px, 3vw, 34px); letter-spacing: -1.2px; line-height: 1.1; margin: 0; }
+    .subtitle { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 9px 0 0; }
+    .button { align-items: center; background: var(--green); border: 1px solid var(--green); border-radius: 8px; color: white; display: inline-flex; font-size: 12px; font-weight: 680; gap: 7px; justify-content: center; min-height: 38px; padding: 0 14px; transition: background .15s, transform .15s; }
+    .button:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .button.secondary { background: white; border-color: var(--line); color: #495147; }
+    .button.secondary:hover { background: #f5f6f1; }
+    .button.small { font-size: 11px; min-height: 32px; padding: 0 11px; }
+    .button:disabled { cursor: not-allowed; opacity: .5; transform: none; }
+    .grid { display: grid; gap: 16px; }
+    .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+    .stat-card { min-height: 125px; padding: 17px 18px; }
+    .stat-top { align-items: center; color: var(--muted); display: flex; font-size: 11px; justify-content: space-between; }
+    .stat-icon { align-items: center; background: #f3f5ee; border-radius: 7px; color: var(--green); display: flex; font-size: 14px; height: 27px; justify-content: center; width: 27px; }
+    .stat-value { font-size: 25px; font-weight: 740; letter-spacing: -.8px; margin-top: 13px; }
+    .stat-foot { color: #92978d; font-size: 10px; margin-top: 3px; }
+    .home-grid { align-items: start; grid-template-columns: minmax(0, 1.45fr) minmax(260px, .8fr); margin-top: 17px; }
+    .panel { padding: 19px 20px; }
+    .panel-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .panel-heading h2 { font-size: 14px; letter-spacing: -.2px; margin: 0; }
+    .text-button { background: none; border: 0; color: var(--green); font-size: 11px; font-weight: 700; padding: 5px 0; }
+    .text-button:hover { color: var(--green-dark); text-decoration: underline; }
+    .habit-list, .entry-list { display: grid; }
+    .habit-row { align-items: center; border-top: 1px solid #eff0eb; display: flex; gap: 11px; min-height: 54px; padding: 9px 0; }
+    .habit-check { align-items: center; background: white; border: 1px solid #d9ddd3; border-radius: 6px; color: white; display: flex; flex: 0 0 21px; height: 21px; justify-content: center; padding: 0; width: 21px; }
+    .habit-check.done { background: var(--green); border-color: var(--green); }
+    .habit-name { font-size: 12px; font-weight: 620; }
+    .habit-row.complete .habit-name { color: #969b91; text-decoration: line-through; }
+    .habit-meta { color: #93998f; font-size: 10px; margin-left: auto; white-space: nowrap; }
+    .progress-wrap { background: #eff0ea; border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-bar { background: var(--green); border-radius: inherit; height: 100%; transition: width .3s ease; }
+    .progress-caption { color: var(--muted); display: flex; font-size: 10px; justify-content: space-between; margin: 12px 0 7px; }
+    .focus-card { background: #f3f5ed; border: 1px solid #e7eadd; border-radius: 10px; margin-top: 14px; padding: 15px; }
+    .focus-card .mini-label { color: #777f72; font-size: 10px; }
+    .focus-card h3 { font-size: 14px; letter-spacing: -.2px; margin: 6px 0 8px; }
+    .focus-card p { color: #72796f; font-size: 11px; line-height: 1.5; margin: 0 0 12px; }
+    .focus-actions { align-items: center; display: flex; justify-content: space-between; }
+    .tag { background: #eef3eb; border-radius: 5px; color: var(--green); font-size: 10px; font-weight: 650; padding: 5px 7px; }
+    .insight-card { background: #fbf5e8; border: 1px solid #f0e7d2; border-radius: 10px; margin-top: 13px; padding: 15px; }
+    .insight-card .mini-label { color: #967133; font-size: 10px; font-weight: 720; }
+    .insight-card p { color: #65583e; font-size: 11px; line-height: 1.6; margin: 8px 0 0; }
+    .section-page { display: none; }
+    .section-page.active { display: block; }
+    .section-toolbar { align-items: center; display: flex; justify-content: space-between; margin: 20px 0 12px; }
+    .section-toolbar h2 { font-size: 14px; margin: 0; }
+    .section-toolbar p { color: var(--muted); font-size: 11px; margin: 4px 0 0; }
+    .table-card { overflow: hidden; }
+    .data-row { align-items: center; border-top: 1px solid #eff0eb; display: flex; gap: 14px; min-height: 64px; padding: 12px 18px; }
+    .data-row:first-child { border-top: 0; }
+    .data-row-main { flex: 1; min-width: 0; }
+    .data-row-title { font-size: 12px; font-weight: 660; overflow-wrap: anywhere; }
+    .data-row-sub { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 4px; overflow-wrap: anywhere; }
+    .data-row-actions { display: flex; gap: 5px; }
+    .quiet-button { background: white; border: 1px solid var(--line); border-radius: 6px; color: #62695f; font-size: 10px; min-height: 29px; padding: 0 9px; }
+    .quiet-button:hover { background: #f5f6f1; }
+    .quiet-button.danger:hover { background: #faf0ed; color: #9e4633; }
+    .habit-overview { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 17px; }
+    .overview-tile { padding: 16px 18px; }
+    .overview-tile .value { font-size: 22px; font-weight: 730; }
+    .overview-tile .label { color: var(--muted); font-size: 10px; margin-top: 4px; }
+    .focus-layout { align-items: start; display: grid; gap: 16px; grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr); }
+    .focus-form-card, .timer-card { padding: 22px; }
+    .timer-card { background: #f4f5ee; text-align: center; }
+    .timer-label { color: var(--muted); font-size: 11px; margin: 0; }
+    .timer-display { color: var(--green); font-size: clamp(48px, 8vw, 72px); font-variant-numeric: tabular-nums; font-weight: 680; letter-spacing: -3px; line-height: 1.2; margin: 19px 0 12px; }
+    .timer-task { color: #4b5449; font-size: 12px; margin: 0 auto 20px; max-width: 270px; overflow-wrap: anywhere; }
+    .timer-controls { display: flex; gap: 8px; justify-content: center; }
+    .micro-list { list-style: none; margin: 16px 0 0; padding: 0; text-align: left; }
+    .micro-list li { align-items: baseline; border-top: 1px solid #e2e6db; color: #596253; display: flex; font-size: 11px; gap: 8px; line-height: 1.5; padding: 9px 0; }
+    .micro-list li span:first-child { color: var(--green); font-size: 10px; font-weight: 750; }
+    .field-grid { display: grid; gap: 13px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label, .field-label { color: #525a50; font-size: 11px; font-weight: 660; }
+    .field input, .field textarea, .field select { background: white; border: 1px solid #dfe2d9; border-radius: 7px; color: var(--ink); min-height: 38px; outline: none; padding: 9px 10px; width: 100%; }
+    .field textarea { min-height: 85px; resize: vertical; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: #6c9878; box-shadow: 0 0 0 3px rgba(40, 92, 66, .1); }
+    .field-hint { color: #8b9187; font-size: 10px; }
+    .form-actions { display: flex; gap: 8px; grid-column: 1 / -1; margin-top: 2px; }
+    .checkin-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, .95fr) minmax(260px, 1.05fr); }
+    .checkin-card { padding: 22px; }
+    .energy-scale { display: flex; gap: 8px; }
+    .scale-option { background: white; border: 1px solid #dfe2d9; border-radius: 7px; color: #687064; flex: 1; min-height: 38px; }
+    .scale-option.selected { background: var(--green-soft); border-color: #abc4aa; color: var(--green-dark); font-weight: 750; }
+    .mood-options { display: flex; gap: 7px; }
+    .mood-option { background: white; border: 1px solid #dfe2d9; border-radius: 7px; flex: 1; min-height: 38px; }
+    .mood-option.selected { background: var(--gold-soft); border-color: #e8d29c; }
+    .trend-card { padding: 20px; }
+    .trend-list { display: grid; gap: 12px; margin-top: 17px; }
+    .trend-row { align-items: center; display: grid; gap: 10px; grid-template-columns: 65px 1fr 48px; }
+    .trend-day { color: var(--muted); font-size: 10px; }
+    .trend-track { background: #eff0ea; border-radius: 99px; height: 7px; overflow: hidden; }
+    .trend-fill { background: #9eb99d; border-radius: inherit; height: 100%; }
+    .trend-score { color: #586153; font-size: 10px; text-align: right; }
+    .empty-state { color: #858c81; font-size: 11px; line-height: 1.6; padding: 24px 14px; text-align: center; }
+    .empty-state strong { color: #586153; display: block; font-size: 12px; margin-bottom: 4px; }
+    .notice { border-radius: 8px; display: none; font-size: 11px; line-height: 1.5; margin: 0 auto 12px; max-width: 1040px; padding: 10px 13px; }
+    .notice.show { display: block; }
+    .notice.error { background: #fbefec; color: #8b3827; }
+    .notice.success { background: #e9f3e9; color: #2f6240; }
+    dialog { border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 25px 80px rgba(23, 37, 23, .2); color: var(--ink); max-width: min(500px, calc(100vw - 28px)); padding: 0; width: 100%; }
+    dialog::backdrop { background: rgba(28, 37, 28, .35); backdrop-filter: blur(2px); }
+    .dialog-head { align-items: center; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; padding: 16px 20px; }
+    .dialog-head h2 { font-size: 15px; margin: 0; }
+    .dialog-body { padding: 19px 20px 21px; }
+    .close-button { background: none; border: 0; color: var(--muted); font-size: 20px; line-height: 1; padding: 2px 5px; }
+    .settings-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 19px; }
+    .storage-note { background: #f6f7f2; border-radius: 8px; color: #72796f; font-size: 10px; line-height: 1.6; margin-top: 15px; padding: 11px 12px; }
+    .mobile-brand { display: none; }
+    @media (max-width: 1050px) {
+      .main { padding: 0 30px 50px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .sidebar { background: rgba(255,255,255,.97); border-bottom: 1px solid var(--line); border-right: 0; bottom: auto; flex-direction: row; height: 62px; left: 0; overflow-x: auto; padding: 0 14px; right: 0; top: 0; width: auto; }
+      .brand { flex: 0 0 auto; font-size: 16px; padding: 0 7px 0 0; }
+      .brand-mark { height: 29px; width: 29px; }
+      .side-label, .sidebar-bottom { display: none; }
+      .nav-list { display: flex; gap: 2px; margin-left: auto; }
+      .nav-button { border-radius: 8px; flex-direction: column; font-size: 9px; gap: 1px; justify-content: center; min-width: 53px; padding: 6px 5px; }
+      .nav-icon { font-size: 14px; height: 17px; }
+      .main { margin-left: 0; padding: 62px 18px 38px; }
+      .topbar { height: 54px; }
+      .today-pill { font-size: 10px; padding: 7px 8px; }
+      .page-heading { align-items: flex-start; gap: 12px; margin: 27px 0 19px; }
+      .page-heading .button { flex: 0 0 auto; }
+      .home-grid, .focus-layout, .checkin-layout { grid-template-columns: 1fr; }
+      .habit-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .overview-tile { padding: 13px; }
+    }
+    @media (max-width: 430px) {
+      .main { padding-left: 13px; padding-right: 13px; }
+      .nav-button { min-width: 47px; }
+      .stats-grid { gap: 9px; }
+      .stat-card { min-height: 110px; padding: 13px; }
+      .stat-value { font-size: 22px; }
+      .page-heading { flex-wrap: wrap; }
+      .page-heading .button { min-height: 34px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .field.full, .form-actions { grid-column: auto; }
+      .data-row { align-items: flex-start; flex-wrap: wrap; }
+      .data-row-actions { margin-left: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="#home" aria-label="Daymark home"><span class="brand-mark">d</span>daymark</a>
+      <div class="side-label">Your workspace</div>
+      <nav class="nav-list">
+        <button class="nav-button" data-page="home" aria-current="page"><span class="nav-icon">⌂</span>Overview</button>
+        <button class="nav-button" data-page="habits"><span class="nav-icon">◉</span>Habits</button>
+        <button class="nav-button" data-page="focus"><span class="nav-icon">◷</span>Focus</button>
+        <button class="nav-button" data-page="checkin"><span class="nav-icon">☼</span>Check-in</button>
+        <button class="nav-button" data-page="learning"><span class="nav-icon">↗</span>Learning</button>
+      </nav>
+      <div class="sidebar-bottom">Small steps, steady days.<br><strong>Your data stays on this device.</strong></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Personal workspace <span aria-hidden="true">/</span> <span id="breadcrumb-current">Overview</span></div>
+        <div class="top-actions"><span class="today-pill" id="today-date"></span><button class="icon-button" id="settings-open" aria-label="Data settings" title="Data settings">⚙</button></div>
+      </header>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <div class="content">
+        <section class="section-page active" data-section="home">
+          <div class="page-heading">
+            <div><p class="eyebrow">A little progress adds up</p><h1 id="greeting">Make today count.</h1><p class="subtitle">Build momentum one small, intentional step at a time.</p></div>
+            <button class="button" data-go="focus">＋ Start a 5-min sprint</button>
+          </div>
+          <div class="grid stats-grid">
+            <article class="card stat-card"><div class="stat-top"><span>Habits today</span><span class="stat-icon">◉</span></div><div class="stat-value" id="stat-habits">0 / 0</div><div class="stat-foot" id="stat-habit-foot">A fresh start</div></article>
+            <article class="card stat-card"><div class="stat-top"><span>Current best streak</span><span class="stat-icon">↗</span></div><div class="stat-value" id="stat-streak">0 days</div><div class="stat-foot">Keep showing up</div></article>
+            <article class="card stat-card"><div class="stat-top"><span>Focus this week</span><span class="stat-icon">◷</span></div><div class="stat-value" id="stat-focus">0 min</div><div class="stat-foot">Five minutes is a win</div></article>
+            <article class="card stat-card"><div class="stat-top"><span>Learning this week</span><span class="stat-icon">⌁</span></div><div class="stat-value" id="stat-learning">0 min</div><div class="stat-foot" id="stat-learning-foot">Keep curiosity close</div></article>
+          </div>
+          <div class="grid home-grid">
+            <article class="card panel">
+              <div class="panel-heading"><h2>Today's habits</h2><button class="text-button" data-go="habits">View all habits →</button></div>
+              <div class="progress-caption"><span id="habit-progress-label">Daily progress</span><span id="habit-progress-percent">0%</span></div>
+              <div class="progress-wrap" aria-label="Today's habit completion"><div class="progress-bar" id="habit-progress-bar" style="width:0%"></div></div>
+              <div class="habit-list" id="home-habit-list"></div>
+            </article>
+            <div>
+              <article class="card panel">
+                <div class="panel-heading"><h2>Start before you're ready</h2><span class="tag">5 minutes</span></div>
+                <div class="focus-card"><div class="mini-label">A gentle nudge</div><h3>Make the first move tiny.</h3><p>Choose one thing you've been putting off. Break it into a few steps and give the first one five focused minutes.</p><div class="focus-actions"><span class="mini-label">No perfect plan needed</span><button class="button small" data-go="focus">Get started →</button></div></div>
+              </article>
+              <article class="card panel" style="margin-top:14px">
+                <div class="panel-heading"><h2>Check in with yourself</h2><span class="tag" id="checkin-today-tag">Today</span></div>
+                <div class="insight-card"><div class="mini-label">ENERGY IS INFORMATION</div><p id="checkin-summary">Notice how you feel without judging it. A quick check-in can help you spot your best hours.</p></div>
+                <button class="text-button" data-go="checkin" style="margin-top:8px">Log an energy check-in →</button>
+              </article>
+            </div>
+          </div>
+        </section>
+        <section class="section-page" data-section="habits">
+          <div class="page-heading"><div><p class="eyebrow">Consistency over intensity</p><h1>Your habits</h1><p class="subtitle">Keep the routines that make your days feel more like yours.</p></div><button class="button" id="add-habit">＋ Add a habit</button></div>
+          <div class="habit-overview">
+            <article class="card overview-tile"><div class="value" id="habit-page-today">0 / 0</div><div class="label">Completed today</div></article>
+            <article class="card overview-tile"><div class="value" id="habit-page-streak">0 days</div><div class="label">Best active streak</div></article>
+            <article class="card overview-tile"><div class="value" id="habit-page-score">0%</div><div class="label">Last 7 days consistency</div></article>
+          </div>
+          <div class="section-toolbar"><div><h2>Your routine</h2><p>Tick off what you complete today. Progress is saved on this device.</p></div></div>
+          <div class="card table-card" id="habit-list"></div>
+        </section>
+        <section class="section-page" data-section="focus">
+          <div class="page-heading"><div><p class="eyebrow">Make starting easier</p><h1>Focus launcher</h1><p class="subtitle">Turn the thing you're avoiding into a first step you can start now.</p></div></div>
+          <div class="focus-layout">
+            <article class="card focus-form-card">
+              <div class="panel-heading"><h2>Choose your next tiny task</h2><span class="tag">One thing at a time</span></div>
+              <form id="focus-form" class="field-grid">
+                <div class="field full"><label for="focus-title">What have you been putting off?</label><input id="focus-title" name="title" maxlength="120" placeholder="e.g. Start the project proposal" required></div>
+                <div class="field full"><label for="focus-steps">Break it into 2–3 tiny actions</label><textarea id="focus-steps" name="steps" maxlength="500" placeholder="Open the document&#10;Write a rough first sentence&#10;Find one useful reference" required></textarea><span class="field-hint">One action per line, 200 characters max per step. Keep each step small enough to begin.</span></div>
+                <div class="form-actions"><button class="button" type="submit">Start my 5-minute sprint</button></div>
+              </form>
+            </article>
+            <article class="card timer-card">
+              <p class="timer-label" id="timer-label">Your next five minutes</p><div class="timer-display" id="timer-display" aria-live="off">05:00</div>
+              <p class="timer-task" id="timer-task">Your task will appear here when you're ready.</p>
+              <div class="timer-controls"><button class="button" id="timer-toggle" disabled>Start timer</button><button class="button secondary" id="timer-reset" disabled>Reset</button></div>
+              <ol class="micro-list" id="micro-list" hidden></ol>
+            </article>
+          </div>
+          <div class="section-toolbar" style="margin-top:23px"><div><h2>Recent focus sprints</h2><p>Completed five-minute starts, captured as small wins.</p></div></div>
+          <div class="card table-card" id="focus-history"></div>
+        </section>
+        <section class="section-page" data-section="checkin">
+          <div class="page-heading"><div><p class="eyebrow">Listen, don't judge</p><h1>Energy check-in</h1><p class="subtitle">A tiny note about how you feel can reveal patterns over time.</p></div></div>
+          <div class="checkin-layout">
+            <article class="card checkin-card">
+              <div class="panel-heading"><h2>How are you right now?</h2><span class="tag" id="checkin-date-label"></span></div>
+              <form id="checkin-form" class="field-grid">
+                <div class="field full"><label for="checkin-period">Time of day</label><select id="checkin-period"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select><span class="field-hint">One check-in per time of day helps you notice when your energy is strongest.</span></div>
+                <div class="field full"><span class="field-label">Energy level</span><div class="energy-scale" id="energy-scale" role="group" aria-label="Energy level"></div></div>
+                <div class="field full"><span class="field-label">Mood</span><div class="mood-options" id="mood-options" role="group" aria-label="Mood"></div></div>
+                <div class="field full"><label for="checkin-note">What's affecting your energy?</label><textarea id="checkin-note" maxlength="500" placeholder="A blocker, a bright spot, or anything worth noticing…"></textarea></div>
+                <div class="form-actions"><button class="button" type="submit">Save check-in</button></div>
+              </form>
+            </article>
+            <article class="card trend-card"><div class="panel-heading"><h2>Recent energy</h2><span class="tag">Last 7 days</span></div><p class="subtitle" style="margin:0">Your check-ins are private. Look for patterns, not perfect scores.</p><div class="trend-list" id="energy-trend"></div><div style="border-top:1px solid var(--line);margin-top:19px;padding-top:15px"><div class="panel-heading" style="margin-bottom:4px"><h2 style="font-size:12px">Energy by time of day</h2><span class="tag">All check-ins</span></div><div class="trend-list" id="period-trend"></div></div></article>
+          </div>
+          <div class="section-toolbar" style="margin-top:22px"><div><h2>Recent notes</h2><p>Small observations can make tomorrow easier.</p></div></div>
+          <div class="card table-card" id="checkin-history"></div>
+        </section>
+        <section class="section-page" data-section="learning">
+          <div class="page-heading"><div><p class="eyebrow">Stay curious, at your pace</p><h1>Learning log</h1><p class="subtitle">Make your tech learning visible, one focused session at a time.</p></div><button class="button" id="add-learning">＋ Log a session</button></div>
+          <div class="grid stats-grid">
+            <article class="card stat-card"><div class="stat-top"><span>Time this week</span><span class="stat-icon">◷</span></div><div class="stat-value" id="learning-week">0 min</div><div class="stat-foot">Every session counts</div></article>
+            <article class="card stat-card"><div class="stat-top"><span>Technologies explored</span><span class="stat-icon">⌁</span></div><div class="stat-value" id="learning-tech-count">0</div><div class="stat-foot">Curiosity in action</div></article>
+            <article class="card stat-card"><div class="stat-top"><span>Sessions logged</span><span class="stat-icon">↗</span></div><div class="stat-value" id="learning-session-count">0</div><div class="stat-foot">Small steps add up</div></article>
+            <article class="card stat-card"><div class="stat-top"><span>Recent focus</span><span class="stat-icon">✎</span></div><div class="stat-value" id="learning-recent-tech" style="font-size:19px">—</div><div class="stat-foot">Your latest topic</div></article>
+          </div>
+          <div class="section-toolbar"><div><h2>Learning history</h2><p>Track technology, topic, time spent, and notes.</p></div></div>
+          <div class="card table-card" id="learning-history"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <dialog id="habit-dialog">
+    <div class="dialog-head"><h2 id="habit-dialog-title">Add a habit</h2><button class="close-button" data-close="habit-dialog" aria-label="Close">×</button></div>
+    <div class="dialog-body"><form id="habit-form" class="field-grid">
+      <div class="field full"><label for="habit-name">Habit name</label><input id="habit-name" maxlength="80" placeholder="e.g. Read for 10 minutes" required></div>
+      <div class="field full"><label for="habit-frequency">Frequency</label><select id="habit-frequency"><option value="daily">Every day</option><option value="weekdays">Weekdays</option></select><span class="field-hint">A missed weekday won't break your streak on a weekend.</span></div>
+      <div class="form-actions"><button class="button" type="submit" id="habit-save-button">Add habit</button><button class="button secondary" type="button" data-close="habit-dialog">Cancel</button></div>
+    </form></div>
+  </dialog>
+  <dialog id="learning-dialog">
+    <div class="dialog-head"><h2>Log a learning session</h2><button class="close-button" data-close="learning-dialog" aria-label="Close">×</button></div>
+    <div class="dialog-body"><form id="learning-form" class="field-grid">
+      <div class="field"><label for="learning-tech">Technology</label><input id="learning-tech" maxlength="80" placeholder="e.g. FastAPI" required></div>
+      <div class="field"><label for="learning-topic">Topic / subtopic</label><input id="learning-topic" maxlength="100" placeholder="e.g. Dependency injection" required></div>
+      <div class="field"><label for="learning-duration">Minutes spent</label><input id="learning-duration" type="number" min="1" max="1440" value="25" required></div>
+      <div class="field"><label for="learning-date">Date</label><input id="learning-date" type="date" required></div>
+      <div class="field full"><label for="learning-notes">Notes or markdown</label><textarea id="learning-notes" maxlength="3000" placeholder="What did you learn? What would you like to explore next?"></textarea></div>
+      <div class="form-actions"><button class="button" type="submit">Save session</button><button class="button secondary" type="button" data-close="learning-dialog">Cancel</button></div>
+    </form></div>
+  </dialog>
+  <dialog id="settings-dialog">
+    <div class="dialog-head"><h2>Your data</h2><button class="close-button" data-close="settings-dialog" aria-label="Close">×</button></div>
+    <div class="dialog-body"><p class="subtitle" style="margin-top:0">Daymark stores your information only in this browser. Export a backup whenever you like.</p><div class="settings-actions"><button class="button" id="export-data">↓ Export JSON backup</button><button class="button secondary" id="import-data">↑ Import backup</button><input id="import-file" type="file" accept="application/json,.json" hidden></div><div class="storage-note">Schema version 1.0.0 · Data stays on this device · Import replaces the current data. Keep your exported backup somewhere safe.</div></div>
+  </dialog>
+  <script>
+    (() => {
+      "use strict";
+      const STORAGE_KEY = "daymark.data";
+      const SCHEMA_VERSION = "1.0.0";
+      const MINUTE = 60 * 1000;
+      const DAY = 24 * 60 * MINUTE;
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+      const today = () => dateKey(new Date());
+      const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+      const freshData = () => ({ schemaVersion: SCHEMA_VERSION, habits: [], habitEntries: [], focusSessions: [], checkins: [], learningLogs: [] });
+      let data;
+      let selectedEnergy = 3;
+      let selectedMood = "Steady";
+      let selectedPeriod = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
+      let editingHabitId = null;
+      let activeFocus = null;
+      let timerDeadline = null;
+      let timerInterval = null;
+      let timerRemaining = 5 * 60;
+      let noticeTimeout = null;
+
+      function showNotice(message, kind = "success") {
+        const notice = $("#notice");
+        notice.textContent = message;
+        notice.className = `notice show ${kind}`;
+        clearTimeout(noticeTimeout);
+        noticeTimeout = setTimeout(() => { notice.className = "notice"; }, 4500);
+      }
+
+      function validateData(value) {
+        const arrayFields = ["habits", "habitEntries", "focusSessions", "checkins", "learningLogs"];
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("The backup must contain a JSON object.");
+        if (value.schemaVersion !== SCHEMA_VERSION) throw new Error(`Unsupported schema version. Expected ${SCHEMA_VERSION}.`);
+        for (const field of arrayFields) if (!Array.isArray(value[field])) throw new Error(`The backup is missing a valid "${field}" collection.`);
+        const isText = (v, max) => typeof v === "string" && v.length <= max;
+        const isDate = v => {
+          if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+          const [year, month, day] = v.split("-").map(Number);
+          return dateKey(new Date(year, month - 1, day)) === v;
+        };
+        const ids = new Set();
+        const checkIds = (items, name) => {
+          for (const item of items) {
+            if (!item || typeof item !== "object" || !isText(item.id, 100) || !item.id || ids.has(`${name}:${item.id}`)) throw new Error(`The backup contains an invalid ${name} record.`);
+            ids.add(`${name}:${item.id}`);
+          }
+        };
+        checkIds(value.habits, "habit");
+        checkIds(value.habitEntries, "habit entry");
+        checkIds(value.focusSessions, "focus session");
+        checkIds(value.checkins, "check-in");
+        checkIds(value.learningLogs, "learning session");
+        for (const habit of value.habits) if (!isText(habit.name, 80) || !["daily", "weekdays"].includes(habit.frequency) || typeof habit.active !== "boolean") throw new Error("The backup contains an invalid habit.");
+        const habitIds = new Set(value.habits.map(habit => habit.id));
+        const entryKeys = new Set();
+        for (const entry of value.habitEntries) {
+          if (!isText(entry.habitId, 100) || !habitIds.has(entry.habitId) || !isDate(entry.date) || entry.completed !== true) throw new Error("The backup contains an invalid habit entry.");
+          const key = `${entry.habitId}:${entry.date}`;
+          if (entryKeys.has(key)) throw new Error("The backup contains duplicate habit completions.");
+          entryKeys.add(key);
+        }
+        for (const session of value.focusSessions) if (!isText(session.title, 120) || !Array.isArray(session.steps) || session.steps.length < 2 || session.steps.length > 3 || session.steps.some(step => !isText(step, 200) || !step.trim()) || !isDate(session.date) || !Number.isFinite(session.durationSeconds) || session.durationSeconds < 0 || session.durationSeconds > 300) throw new Error("The backup contains an invalid focus session.");
+        for (const checkin of value.checkins) if (!isDate(checkin.date) || !["morning", "afternoon", "evening"].includes(checkin.period) || !Number.isInteger(checkin.energy) || checkin.energy < 1 || checkin.energy > 5 || !["Low", "Flat", "Steady", "Good", "Great"].includes(checkin.mood) || !isText(checkin.note, 500) || !isText(checkin.checkedAt, 40) || Number.isNaN(Date.parse(checkin.checkedAt))) throw new Error("The backup contains an invalid check-in.");
+        for (const log of value.learningLogs) if (!isText(log.technology, 80) || !isText(log.topic, 100) || !isText(log.notes, 3000) || !isDate(log.date) || !Number.isInteger(log.minutes) || log.minutes < 1 || log.minutes > 1440) throw new Error("The backup contains an invalid learning session.");
+        if (new Set(value.checkins.map(checkin => `${checkin.date}:${checkin.period}`)).size !== value.checkins.length) throw new Error("The backup contains multiple check-ins for the same time of day.");
+        return {
+          schemaVersion: SCHEMA_VERSION,
+          habits: value.habits.map(h => ({ id: h.id, name: h.name, frequency: h.frequency, active: h.active, createdAt: isText(h.createdAt, 40) ? h.createdAt : new Date().toISOString() })),
+          habitEntries: value.habitEntries.map(e => ({ id: e.id, habitId: e.habitId, date: e.date, completed: true })),
+          focusSessions: value.focusSessions.map(s => ({ id: s.id, title: s.title, steps: s.steps.map(step => isText(step, 200) ? step : "").filter(Boolean), date: s.date, durationSeconds: s.durationSeconds })),
+          checkins: value.checkins.map(c => ({ id: c.id, date: c.date, period: c.period, checkedAt: c.checkedAt, energy: c.energy, mood: c.mood, note: c.note })),
+          learningLogs: value.learningLogs.map(l => ({ id: l.id, technology: l.technology, topic: l.topic, notes: l.notes, date: l.date, minutes: l.minutes }))
+        };
+      }
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          renderAll();
+          return true;
+        } catch (error) {
+          showNotice(`Couldn't save your changes: ${error.message}. Export or free up browser storage.`, "error");
+          return false;
+        }
+      }
+
+      function loadData() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return freshData();
+        try {
+          return validateData(JSON.parse(raw));
+        } catch (error) {
+          showNotice(`Saved data could not be loaded: ${error.message}. Your stored data was left unchanged.`, "error");
+          return freshData();
+        }
+      }
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      }
+
+      function emptyState(title, message) {
+        const box = el("div", "empty-state");
+        box.append(el("strong", "", title), el("span", "", message));
+        return box;
+      }
+
+      function formatDate(key) {
+        const [year, month, day] = key.split("-").map(Number);
+        return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(year, month - 1, day));
+      }
+
+      function habitEntry(habitId, date = today()) {
+        return data.habitEntries.find(entry => entry.habitId === habitId && entry.date === date);
+      }
+
+      function isScheduled(habit, date) {
+        if (habit.frequency === "daily") return true;
+        const [year, month, day] = date.split("-").map(Number);
+        const weekday = new Date(year, month - 1, day).getDay();
+        return weekday > 0 && weekday < 6;
+      }
+
+      function streakFor(habit) {
+        let count = 0;
+        const cursor = new Date();
+        if (!habitEntry(habit.id, today()) && isScheduled(habit, today())) cursor.setDate(cursor.getDate() - 1);
+        while (count < 3660) {
+          const key = dateKey(cursor);
+          if (isScheduled(habit, key)) {
+            if (!habitEntry(habit.id, key)) break;
+            count++;
+          }
+          cursor.setDate(cursor.getDate() - 1);
+        }
+        return count;
+      }
+
+      function weekStart(date = new Date()) {
+        const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const offset = (start.getDay() + 6) % 7;
+        start.setDate(start.getDate() - offset);
+        return dateKey(start);
+      }
+
+      function isThisWeek(key) {
+        return key >= weekStart() && key <= today();
+      }
+
+      function renderHome() {
+        const activeHabits = data.habits.filter(habit => habit.active);
+        const scheduledToday = activeHabits.filter(habit => isScheduled(habit, today()));
+        const scheduledDone = scheduledToday.filter(habit => habitEntry(habit.id)).length;
+        const streaks = activeHabits.map(streakFor);
+        const bestStreak = Math.max(0, ...streaks);
+        const focusMinutes = data.focusSessions.filter(session => isThisWeek(session.date)).reduce((total, session) => total + session.durationSeconds / 60, 0);
+        const learningMinutes = data.learningLogs.filter(log => isThisWeek(log.date)).reduce((total, log) => total + log.minutes, 0);
+        $("#stat-habits").textContent = `${scheduledDone} / ${scheduledToday.length}`;
+        $("#stat-habit-foot").textContent = activeHabits.length ? `${scheduledDone} of ${scheduledToday.length} scheduled today` : "Add one small routine to begin";
+        $("#stat-streak").textContent = `${bestStreak} ${bestStreak === 1 ? "day" : "days"}`;
+        $("#stat-focus").textContent = `${Math.round(focusMinutes)} min`;
+        $("#stat-learning").textContent = `${learningMinutes} min`;
+        $("#stat-learning-foot").textContent = data.learningLogs.length ? "Keep curiosity close" : "Log your first learning session";
+        const percent = scheduledToday.length ? Math.round(scheduledDone / scheduledToday.length * 100) : 0;
+        $("#habit-progress-label").textContent = scheduledToday.length ? `${scheduledDone} of ${scheduledToday.length} habits done` : "Add habits to build your routine";
+        $("#habit-progress-percent").textContent = `${percent}%`;
+        $("#habit-progress-bar").style.width = `${percent}%`;
+        const list = $("#home-habit-list");
+        list.replaceChildren();
+        const shown = activeHabits.slice(0, 6);
+        if (!shown.length) list.append(emptyState("Start with one small habit", "Add a routine that makes your day feel a little better."));
+        for (const habit of shown) list.append(makeHabitRow(habit, true));
+        const latest = data.checkins.filter(checkin => checkin.date === today()).sort((a, b) => b.checkedAt.localeCompare(a.checkedAt))[0];
+        $("#checkin-summary").textContent = latest
+          ? `Today: ${latest.mood.toLowerCase()} mood, energy ${latest.energy}/5.${latest.note ? ` You noticed: ${latest.note}` : " Nice work checking in with yourself."}`
+          : "Notice how you feel without judging it. A quick check-in can help you spot your best hours.";
+      }
+
+      function makeHabitRow(habit, compact) {
+        const done = Boolean(habitEntry(habit.id));
+        const row = el("div", `habit-row${done ? " complete" : ""}`);
+        const check = el("button", `habit-check${done ? " done" : ""}`, done ? "✓" : "");
+        check.type = "button";
+        check.setAttribute("aria-label", `${done ? "Mark incomplete" : "Complete"} ${habit.name}`);
+        check.setAttribute("aria-pressed", String(done));
+        check.addEventListener("click", () => toggleHabit(habit.id));
+        const name = el("span", "habit-name", habit.name);
+        row.append(check, name);
+        const meta = el("span", "habit-meta", compact ? (streakFor(habit) ? `${streakFor(habit)}d streak` : habit.frequency === "weekdays" ? "Weekdays" : "Daily") : (habit.frequency === "weekdays" ? "Weekdays" : "Daily"));
+        row.append(meta);
+        return row;
+      }
+
+      function toggleHabit(id) {
+        const habit = data.habits.find(item => item.id === id && item.active);
+        if (!habit) return;
+        const existing = habitEntry(id);
+        if (existing) data.habitEntries = data.habitEntries.filter(entry => entry !== existing);
+        else data.habitEntries.push({ id: uid(), habitId: id, date: today(), completed: true });
+        save();
+      }
+
+      function renderHabits() {
+        const active = data.habits.filter(habit => habit.active);
+        const todayDone = active.filter(habit => habitEntry(habit.id)).length;
+        const maxStreak = Math.max(0, ...active.map(streakFor));
+        let possible = 0, completed = 0;
+        for (let offset = 0; offset < 7; offset++) {
+          const date = new Date();
+          date.setDate(date.getDate() - offset);
+          const key = dateKey(date);
+          for (const habit of active) if (isScheduled(habit, key)) {
+            possible++;
+            if (habitEntry(habit.id, key)) completed++;
+          }
+        }
+        $("#habit-page-today").textContent = `${todayDone} / ${active.length}`;
+        $("#habit-page-streak").textContent = `${maxStreak} ${maxStreak === 1 ? "day" : "days"}`;
+        $("#habit-page-score").textContent = `${possible ? Math.round(completed / possible * 100) : 0}%`;
+        const list = $("#habit-list");
+        list.replaceChildren();
+        if (!data.habits.length) { list.append(emptyState("No habits yet", "Add one small routine to start building consistency.")); return; }
+        for (const habit of data.habits) {
+          const row = el("div", "data-row");
+          if (habit.active) {
+            const check = el("button", `habit-check${habitEntry(habit.id) ? " done" : ""}`, habitEntry(habit.id) ? "✓" : "");
+            check.type = "button";
+            check.setAttribute("aria-label", `${habitEntry(habit.id) ? "Mark incomplete" : "Complete"} ${habit.name}`);
+            check.setAttribute("aria-pressed", String(Boolean(habitEntry(habit.id))));
+            check.addEventListener("click", () => toggleHabit(habit.id));
+            row.append(check);
+          } else row.append(el("span", "tag", "Paused"));
+          const main = el("div", "data-row-main");
+          main.append(el("div", "data-row-title", habit.name), el("div", "data-row-sub", `${habit.frequency === "weekdays" ? "Weekdays" : "Daily"} · ${habit.active ? `${streakFor(habit)}-day streak` : "Not included in daily progress"}`));
+          const actions = el("div", "data-row-actions");
+          const edit = el("button", "quiet-button", "Edit");
+          edit.type = "button";
+          edit.addEventListener("click", () => openHabitDialog(habit));
+          const pause = el("button", "quiet-button", habit.active ? "Pause" : "Resume");
+          pause.type = "button";
+          pause.addEventListener("click", () => { habit.active = !habit.active; save(); });
+          const remove = el("button", "quiet-button danger", "Delete");
+          remove.type = "button";
+          remove.addEventListener("click", () => deleteHabit(habit));
+          actions.append(edit, pause, remove);
+          row.append(main, actions);
+          list.append(row);
+        }
+      }
+
+      function deleteHabit(habit) {
+        if (!confirm(`Delete "${habit.name}" and its completion history? This can't be undone.`)) return;
+        data.habits = data.habits.filter(item => item.id !== habit.id);
+        data.habitEntries = data.habitEntries.filter(item => item.habitId !== habit.id);
+        save();
+        showNotice("Habit and its history deleted.");
+      }
+
+      function openHabitDialog(habit = null) {
+        editingHabitId = habit ? habit.id : null;
+        $("#habit-dialog-title").textContent = habit ? "Edit a habit" : "Add a habit";
+        $("#habit-save-button").textContent = habit ? "Save changes" : "Add habit";
+        $("#habit-name").value = habit ? habit.name : "";
+        $("#habit-frequency").value = habit ? habit.frequency : "daily";
+        $("#habit-dialog").showModal();
+        $("#habit-name").focus();
+      }
+
+      function renderFocusHistory() {
+        const list = $("#focus-history");
+        list.replaceChildren();
+        const sessions = [...data.focusSessions].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0, 8);
+        if (!sessions.length) { list.append(emptyState("No sprints yet", "Your first five minutes count. Every small start is progress.")); return; }
+        for (const session of sessions) {
+          const row = el("div", "data-row");
+          const main = el("div", "data-row-main");
+          main.append(el("div", "data-row-title", session.title), el("div", "data-row-sub", `${formatDate(session.date)} · ${Math.max(1, Math.round(session.durationSeconds / 60))} min · ${session.steps.join(" · ")}`));
+          row.append(main);
+          list.append(row);
+        }
+      }
+
+      function setTimerDisplay(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        $("#timer-display").textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        document.title = activeFocus && timerInterval ? `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")} · Daymark` : "Daymark — Make today count";
+      }
+
+      function startFocus(title, steps) {
+        activeFocus = { title, steps };
+        timerRemaining = 5 * 60;
+        timerDeadline = null;
+        clearInterval(timerInterval);
+        timerInterval = null;
+        $("#timer-task").textContent = title;
+        $("#timer-label").textContent = "Your next five minutes";
+        const list = $("#micro-list");
+        list.replaceChildren();
+        steps.forEach((step, index) => {
+          const item = el("li");
+          item.append(el("span", "", `${String(index + 1).padStart(2, "0")}`), el("span", "", step));
+          list.append(item);
+        });
+        list.hidden = false;
+        $("#timer-toggle").disabled = false;
+        $("#timer-toggle").textContent = "Start timer";
+        $("#timer-reset").disabled = false;
+        setTimerDisplay(timerRemaining);
+        $("#timer-task").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function stopTimer(reset = true) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerDeadline = null;
+        if (reset) timerRemaining = 5 * 60;
+        $("#timer-toggle").textContent = "Start timer";
+        $("#timer-toggle").disabled = !activeFocus;
+        setTimerDisplay(timerRemaining);
+      }
+
+      function tickTimer() {
+        timerRemaining = Math.max(0, Math.ceil((timerDeadline - Date.now()) / 1000));
+        setTimerDisplay(timerRemaining);
+        if (timerRemaining === 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          timerDeadline = null;
+          $("#timer-toggle").textContent = "Start timer";
+          $("#timer-toggle").disabled = true;
+          $("#timer-label").textContent = "You showed up. That's a win.";
+          document.title = "Daymark — Make today count";
+          data.focusSessions.push({ id: uid(), title: activeFocus.title, steps: activeFocus.steps, date: today(), durationSeconds: 300 });
+          save();
+          showNotice("Five minutes done. You started, and that matters.");
+        }
+      }
+
+      function toggleTimer() {
+        if (!activeFocus) return;
+        if (timerInterval) {
+          timerRemaining = Math.max(0, Math.ceil((timerDeadline - Date.now()) / 1000));
+          clearInterval(timerInterval);
+          timerInterval = null;
+          timerDeadline = null;
+          $("#timer-toggle").textContent = "Resume timer";
+          setTimerDisplay(timerRemaining);
+        } else {
+          timerDeadline = Date.now() + timerRemaining * 1000;
+          timerInterval = setInterval(tickTimer, 250);
+          $("#timer-toggle").textContent = "Pause timer";
+          tickTimer();
+        }
+      }
+
+      function renderCheckin() {
+        $("#checkin-date-label").textContent = formatDate(today());
+        const latest = data.checkins.filter(checkin => checkin.date === today() && checkin.period === selectedPeriod).sort((a, b) => b.checkedAt.localeCompare(a.checkedAt))[0];
+        $("#checkin-period").value = selectedPeriod;
+        if (latest) { selectedEnergy = latest.energy; selectedMood = latest.mood; }
+        const energyScale = $("#energy-scale");
+        energyScale.replaceChildren();
+        for (let score = 1; score <= 5; score++) {
+          const button = el("button", `scale-option${selectedEnergy === score ? " selected" : ""}`, String(score));
+          button.type = "button";
+          button.setAttribute("aria-pressed", String(selectedEnergy === score));
+          button.setAttribute("aria-label", `Energy ${score} of 5`);
+          button.addEventListener("click", () => {
+            selectedEnergy = score;
+            $$(".scale-option", energyScale).forEach(option => {
+              const selected = option === button;
+              option.classList.toggle("selected", selected);
+              option.setAttribute("aria-pressed", String(selected));
+            });
+          });
+          energyScale.append(button);
+        }
+        const moods = ["Low", "Flat", "Steady", "Good", "Great"];
+        const moodOptions = $("#mood-options");
+        moodOptions.replaceChildren();
+        for (const mood of moods) {
+          const button = el("button", `mood-option${selectedMood === mood ? " selected" : ""}`, mood);
+          button.type = "button";
+          button.setAttribute("aria-pressed", String(selectedMood === mood));
+          button.addEventListener("click", () => {
+            selectedMood = mood;
+            $$(".mood-option", moodOptions).forEach(option => {
+              const selected = option === button;
+              option.classList.toggle("selected", selected);
+              option.setAttribute("aria-pressed", String(selected));
+            });
+          });
+          moodOptions.append(button);
+        }
+        $("#checkin-note").value = latest ? latest.note : "";
+        renderEnergyHistory();
+      }
+
+      function renderEnergyHistory() {
+        const trend = $("#energy-trend");
+        trend.replaceChildren();
+        const records = [];
+        const now = new Date();
+        for (let offset = 6; offset >= 0; offset--) {
+          const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+          const key = dateKey(date);
+          const entries = data.checkins.filter(item => item.date === key);
+          const energy = entries.length ? Math.round(entries.reduce((sum, entry) => sum + entry.energy, 0) / entries.length) : 0;
+          records.push({ key, label: new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date), energy });
+        }
+        for (const record of records) {
+          const row = el("div", "trend-row");
+          row.append(el("span", "trend-day", record.label));
+          const track = el("div", "trend-track");
+          const fill = el("div", "trend-fill");
+          fill.style.width = `${record.energy * 20}%`;
+          track.append(fill);
+          row.append(track, el("span", "trend-score", record.energy ? String(record.energy) : "—"));
+          trend.append(row);
+        }
+        const periodTrend = $("#period-trend");
+        periodTrend.replaceChildren();
+        for (const period of ["morning", "afternoon", "evening"]) {
+          const entries = data.checkins.filter(checkin => checkin.period === period);
+          const average = entries.length ? entries.reduce((sum, entry) => sum + entry.energy, 0) / entries.length : 0;
+          const row = el("div", "trend-row");
+          row.append(el("span", "trend-day", period[0].toUpperCase() + period.slice(1)));
+          const track = el("div", "trend-track");
+          const fill = el("div", "trend-fill");
+          fill.style.width = `${average * 20}%`;
+          track.append(fill);
+          row.append(track, el("span", "trend-score", entries.length ? `${average.toFixed(1)} (${entries.length})` : "—"));
+          periodTrend.append(row);
+        }
+        const list = $("#checkin-history");
+        list.replaceChildren();
+        const recent = [...data.checkins].sort((a, b) => b.checkedAt.localeCompare(a.checkedAt)).slice(0, 6);
+        if (!recent.length) { list.append(emptyState("No check-ins yet", "Your notes will show up here, privately on this device.")); return; }
+        for (const item of recent) {
+          const row = el("div", "data-row");
+          const main = el("div", "data-row-main");
+          main.append(el("div", "data-row-title", `${item.period[0].toUpperCase() + item.period.slice(1)} · ${item.mood} · Energy ${item.energy}/5`), el("div", "data-row-sub", `${formatDate(item.date)}${item.note ? ` · ${item.note}` : ""}`));
+          row.append(main);
+          list.append(row);
+        }
+      }
+
+      function renderLearning() {
+        const logs = [...data.learningLogs].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+        const week = data.learningLogs.filter(log => isThisWeek(log.date));
+        const weekMinutes = week.reduce((sum, log) => sum + log.minutes, 0);
+        const technologies = new Set(data.learningLogs.map(log => log.technology.trim().toLocaleLowerCase()));
+        $("#learning-week").textContent = `${weekMinutes} min`;
+        $("#learning-tech-count").textContent = String(technologies.size);
+        $("#learning-session-count").textContent = String(data.learningLogs.length);
+        $("#learning-recent-tech").textContent = logs[0] ? logs[0].technology : "—";
+        const list = $("#learning-history");
+        list.replaceChildren();
+        if (!logs.length) { list.append(emptyState("Your learning starts here", "Log a topic and a few minutes whenever you explore something new.")); return; }
+        for (const log of logs.slice(0, 20)) {
+          const row = el("div", "data-row");
+          const main = el("div", "data-row-main");
+          main.append(el("div", "data-row-title", `${log.technology} · ${log.topic}`), el("div", "data-row-sub", `${formatDate(log.date)} · ${log.minutes} min${log.notes ? ` · ${log.notes}` : ""}`));
+          const remove = el("button", "quiet-button danger", "Delete");
+          remove.type = "button";
+          remove.setAttribute("aria-label", `Delete ${log.technology} learning session`);
+          remove.addEventListener("click", () => {
+            if (!confirm("Delete this learning session? This can't be undone.")) return;
+            data.learningLogs = data.learningLogs.filter(item => item.id !== log.id);
+            save();
+            showNotice("Learning session deleted.");
+          });
+          row.append(main, remove);
+          list.append(row);
+        }
+      }
+
+      function renderAll() {
+        renderHome();
+        renderHabits();
+        renderFocusHistory();
+        renderCheckin();
+        renderLearning();
+      }
+
+      function navigate(page) {
+        const names = { home: "Overview", habits: "Habits", focus: "Focus", checkin: "Check-in", learning: "Learning" };
+        if (!names[page]) return;
+        $$(".section-page").forEach(section => { section.classList.toggle("active", section.dataset.section === page); });
+        $$(".nav-button").forEach(button => {
+          if (button.dataset.page === page) button.setAttribute("aria-current", "page");
+          else button.removeAttribute("aria-current");
+        });
+        $("#breadcrumb-current").textContent = names[page];
+        if (location.hash !== `#${page}`) history.replaceState(null, "", `#${page}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function downloadBackup() {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `daymark-backup-${today()}.json`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotice("Your JSON backup is ready.");
+      }
+
+      function importBackup(file) {
+        const reader = new FileReader();
+        reader.addEventListener("error", () => showNotice("Couldn't read that backup file.", "error"), { once: true });
+        reader.addEventListener("load", () => {
+          try {
+            const imported = validateData(JSON.parse(String(reader.result)));
+            if (!confirm("Importing will replace all Daymark data in this browser. Continue?")) return;
+            data = imported;
+            if (!save()) return;
+            $("#settings-dialog").close();
+            showNotice("Backup imported successfully.");
+          } catch (error) {
+            showNotice(`Backup not imported: ${error.message}`, "error");
+          }
+        }, { once: true });
+        reader.readAsText(file);
+      }
+
+      $("#today-date").textContent = new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date());
+      const hour = new Date().getHours();
+      $("#greeting").textContent = hour < 12 ? "Good morning." : hour < 17 ? "Good afternoon." : "Good evening.";
+      data = loadData();
+      renderAll();
+      navigate(["home", "habits", "focus", "checkin", "learning"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home");
+
+      $$(".nav-button").forEach(button => button.addEventListener("click", () => navigate(button.dataset.page)));
+      $$("[data-go]").forEach(button => button.addEventListener("click", () => navigate(button.dataset.go)));
+      $("#add-habit").addEventListener("click", () => openHabitDialog());
+      $("#habit-form").addEventListener("submit", event => {
+        event.preventDefault();
+        const name = $("#habit-name").value.trim();
+        if (!name) return;
+        if (editingHabitId) {
+          const existing = data.habits.find(habit => habit.id === editingHabitId);
+          if (!existing) { showNotice("That habit no longer exists. Refresh and try again.", "error"); return; }
+          existing.name = name;
+          existing.frequency = $("#habit-frequency").value;
+        } else {
+          data.habits.push({ id: uid(), name, frequency: $("#habit-frequency").value, active: true, createdAt: new Date().toISOString() });
+        }
+        if (save()) { $("#habit-dialog").close(); $("#habit-form").reset(); showNotice(editingHabitId ? "Habit updated." : "Habit added."); }
+      });
+      $("#focus-form").addEventListener("submit", event => {
+        event.preventDefault();
+        const title = $("#focus-title").value.trim();
+        const steps = $("#focus-steps").value.split(/\r?\n/).map(step => step.trim()).filter(Boolean);
+        if (!title || steps.length < 2 || steps.length > 3 || steps.some(step => step.length > 200)) {
+          showNotice("Add a task and 2–3 action steps (200 characters max per step).", "error");
+          return;
+        }
+        startFocus(title, steps);
+        $("#focus-form").reset();
+        showNotice("Your sprint is ready. Start when you are.");
+      });
+      $("#timer-toggle").addEventListener("click", toggleTimer);
+      $("#timer-reset").addEventListener("click", () => { stopTimer(); $("#timer-label").textContent = "Your next five minutes"; });
+      $("#checkin-form").addEventListener("submit", event => {
+        event.preventDefault();
+        const note = $("#checkin-note").value.trim();
+        data.checkins = data.checkins.filter(item => item.date !== today() || item.period !== selectedPeriod);
+        data.checkins.push({ id: uid(), date: today(), period: selectedPeriod, checkedAt: new Date().toISOString(), energy: selectedEnergy, mood: selectedMood, note });
+        if (save()) showNotice("Check-in saved. Thanks for taking a moment.");
+      });
+      $("#add-learning").addEventListener("click", () => {
+        $("#learning-date").value = today();
+        $("#learning-dialog").showModal();
+      });
+      $("#learning-form").addEventListener("submit", event => {
+        event.preventDefault();
+        const minutes = Number($("#learning-duration").value);
+        const date = $("#learning-date").value;
+        if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440 || !date) { showNotice("Enter a valid date and duration between 1 and 1440 minutes.", "error"); return; }
+        data.learningLogs.push({
+          id: uid(), technology: $("#learning-tech").value.trim(), topic: $("#learning-topic").value.trim(),
+          notes: $("#learning-notes").value.trim(), date, minutes
+        });
+        if (save()) { $("#learning-dialog").close(); $("#learning-form").reset(); showNotice("Learning session logged."); }
+      });
+      $("#settings-open").addEventListener("click", () => $("#settings-dialog").showModal());
+      $(".brand").addEventListener("click", event => { event.preventDefault(); navigate("home"); });
+      $("#checkin-period").addEventListener("change", event => {
+        selectedPeriod = event.target.value;
+        renderCheckin();
+      });
+      $("#export-data").addEventListener("click", downloadBackup);
+      $("#import-data").addEventListener("click", () => $("#import-file").click());
+      $("#import-file").addEventListener("change", event => {
+        const file = event.target.files && event.target.files[0];
+        if (file) importBackup(file);
+        event.target.value = "";
+      });
+      $$("[data-close]").forEach(button => button.addEventListener("click", () => {
+        const dialog = document.getElementById(button.dataset.close);
+        if (dialog) dialog.close();
+      }));
+      $$(".section-page").forEach(section => section.addEventListener("submit", event => event.preventDefault()));
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(error => {
+          showNotice(`Offline support could not be enabled: ${error.message}`, "error");
+        }));
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "daymark",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline-first personal productivity and habit tracker",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/check-project.mjs",
+    "test": "node --test",
+    "gate": "npm run check && npm test"
+  }
+}

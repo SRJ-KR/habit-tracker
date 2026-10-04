@@ -20,6 +20,8 @@
 ## Validation
 
 - Check modified files for editor diagnostics and JavaScript/JSON syntax errors using available tools.
+- Before committing code changes, update `QUALITY_LOG.md`, run `npm run gate`, and record exact commands and results. Do not commit until the quality gate passes.
+- The quality gate is also enforced by `.githooks/pre-commit` after configuring `git config core.hooksPath .githooks`, and by `.github/workflows/quality.yml` on pushes and pull requests.
 - For UI changes, verify the affected view and interactions in a browser when possible.
 - Browser end-to-end tests use pytest and Playwright. Configure Python, install `requirements-dev.txt`, install Chromium with `python -m playwright install chromium`, then run `python -m pytest`.
 - Follow `.github/skills/run-playwright-tests/SKILL.md` when executing or extending the browser test suite.
